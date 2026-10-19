@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code scratch editor</title>
+    <link rel="stylesheet" href="/assets/style/style.css">
+</head>
+<body>
+    <nav class="topbar">
+        <label for="type">Select language</label>
+        <select class="type">
+            <option value="html" selected>HTML</option>
+        </select>
+    </nav>
+    <div class="categories">
+        <div class="novisible category">
+            <div class="color test"></div>
+            <label class="categoryname">Name here</label>
+        </div>
+    </div>
+    <div class="blocks">
+        <div class="htmlblocks">
+            <div class="headers">
+                <h2>Headers</h2>
+                <img src="/assets/img/svg/blocks/html/headers/Settypeto.svg" class="html_header_settypeto block" data-action="settype" draggable="false" data-isc="false" data-options='["<!doctype html>"]'></img>
+                <img src="/assets/img/svg/blocks/html/headers/Html.svg" class="html_header_html c_block" data-action='<html lang="%VAL%">' draggable="false" data-isc="true" data-options='["en", "es"]'></img>
+                <img src="/assets/img/svg/blocks/html/headers/Head.svg" class="html_header_head c_block" data-action="<head>" draggable="false" data-isc="true"></img>
+            </div>
+        </div>
+    </div>
+    <div class="result" id="code-output"></div>
+    <script src="/assets/script/script.js"></script>
+</body>
+</html>

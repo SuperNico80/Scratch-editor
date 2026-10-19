@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <title>Blockly.Workspace - Scratch</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/13.4.0/blockly.min.js" integrity="sha512-pZWw+3ZtKXFhD92teP6ev/VfN+oaCAl1MXF0l+PGXgltv5+XBndGJphd+fL4cqe8gzdvuNLICNdEJvKeESEAzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <style>
+            * {
+                font-family: "Segoe UI";
+            }
+            [class$="_block"] {
+                font-family: "Helvetica Neue", "Segoe UI", Helvetica, sans-serif;;
+                font-weight: 500;
+                max-height: 32px;
+                min-width: 8px;
+                display: flex;
+            }
+            [class$="block"] .textandbody {
+                background-color: #ff0873;
+                align-self: center;
+            }
+            [class$="block"] .s4 .s2 {
+                
+            }
+        </style>
+        <style>
+            * {
+                font-family: "Segoe UI";
+            }
+            .con {
+                background-color: #000000;
+                color: #00FF00;
+                padding-right: 720px auto;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Blockly.Workspace - Scratch</h1>
+        <h2>Normal block</h2>
+        <div class="normal_block">
+            <div class="s4_inverted">
+                <div class="s2">
+                    
+                </div>
+                <div class="s1">
+                    
+                </div>
+            </div>
+            <div class="textandbody">
+                <img class="icon">
+                    
+                </img>
+                <div class="blockly_body">
+                    <p>Test</p>
+                </div>
+            </div>
+            <div class="s4">
+                <div class="s2">
+                    
+                </div>
+                <div class="s1">
+                    
+                </div>
+            </div>
+        </div>
+        <input class="run">
+        <pre class="con">Baldi's Console Machine</pre>
+        <script>
+            let pre = document.querySelector(".con")
+            pre.textContent += "\n";
+            window.onerror = function (mensaje) {
+                    pre.textContent += mensaje + "\n";
+                };
+
+            window.addEventListener("unhandledrejection", function (e) {
+                    pre.textContent += e.reason + "\n";
+            });
+            //For iframe consoles
+            //nonexistent()
+/*            const frame = contentWindow;
+
+frame.onload = () => {
+    const w = frame.contentWindow;
+
+    const originalLog = w.console.log;
+
+    w.console.log = (...args) => {
+        originalLog.apply(w.console, args);
+
+        pre.textContent += `<iframe>\\${w.location.href}: ${args.join(" ")}\n`;
+    };
+};*/
+            const originalLog = console.log;
+
+console.log = (...args) => {
+    originalLog(...args); // Sigue mostrando en la consola
+
+    pre.textContent += args.map(arg =>
+        typeof arg === "object"
+            ? JSON.stringify(arg, null, 2)
+            : String(arg)
+    ).join(" ") + "\n";
+};
+        </script>
+        <!--<script>
+            const inputElement = document.querySelector(".run");
+
+inputElement.addEventListener("change", function(event) {
+  const rawCode = event.target.value;
+
+  try {
+    // Dynamically compile and execute the input string as JavaScript
+    const executeUserCode = new Function(rawCode);
+    executeUserCode();
+  } catch (error) {
+    console.error("Invalid JavaScript provided:", error.message);
+  }
+});
+
+        </script>
+        <script>
+            // 1. Aquí tienes algunas funciones de ejemplo ya creadas en tu código
+function saludar() {
+  console.log("¡Hola desde la función saludar!");
+}
+
+function mostrarFecha() {
+  console.log("La fecha actual es:", new Date().toLocaleDateString());
+}
+
+// 2. Escuchamos el cambio en el input
+const input = document.querySelector(".run")
+
+input.addEventListener("change", function(event) {
+  const functionName = event.target.value.trim(); // Ej: "saludar" o "mostrarFecha"
+
+  // 3. Buscamos si existe una FUNCIÓN con ese nombre dentro del objeto global 'window'
+  if (typeof window[functionName] === "function") {
+    
+    // 4. Ejecutamos la función encontrandola dinámicamente
+    window[functionName](); 
+    
+  } else {
+    console.warn(`La función "${functionName}" no existe en el entorno global.`);
+  }
+});
+function example(){
+    console.log("Example")
+}
+
+        </script>-->
+        <script>
+            // 1. Declaras tus funciones normalmente
+function miFuncionUno() {
+  console.log("¡Funcion Uno ejecutada!");
+}
+
+function miFuncionDos() {
+  console.log("¡Funcion Dos ejecutada!");
+}
+
+// 2. LAS EXONES A WINDOW MANUALMENTE (Crucial para entornos modernos)
+window.miFuncionUno = miFuncionUno;
+window.miFuncionDos = miFuncionDos;
+
+// 3. Tu código del input se mantiene igual y ahora SÍ funcionará:
+const input = document.querySelector(".run")
+input.addEventListener("change", function(event) {
+  const functionName = event.target.value.trim();
+
+  if (typeof window[functionName] === "function") {
+    window[functionName]();
+  } else {
+    console.error(`No se encontró la función: ${functionName}`);
+  }
+});
+
+        </script>
+    </body>
+</html>

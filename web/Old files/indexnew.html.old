@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Code Editor</title>
+    <link rel="stylesheet" href="../assets/style/style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <input
+        id="projectName"
+        class="projectName"
+        type="text"
+        value="Scratch Code Project"
+        title="Nombre del proyecto"
+    >
+
+    <button id="clearButton">Limpiar</button>
+    <button id="generateButton">Generar</button>
+    <button id="copyButton">Copiar</button>
+
+    <select id="languageSelect"></select>
+
+    <button id="addLanguageButton">+ Añadir</button>
+
+</header>
+
+
+<main class="main">
+
+    <!-- PALETA -->
+
+    <aside class="palette">
+
+        <div class="paletteTitle">
+            Bloques
+        </div>
+
+        <div id="categories"></div>
+
+    </aside>
+
+
+    <!-- WORKSPACE -->
+
+    <section class="editor">
+
+        <div class="workspaceToolbar">
+
+            <button id="deleteModeButton">
+                🗑 Eliminar
+            </button>
+
+        </div>
+
+        <div
+            id="workspace"
+            class="workspace"
+        >
+
+            <div
+                id="workspaceEmpty"
+                class="workspaceEmpty"
+            >
+                Arrastra bloques aquí
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- CÓDIGO -->
+
+    <aside class="codePanel">
+
+        <div class="codeHeader">
+
+            <span>Código generado</span>
+
+            <button id="formatCodeButton">
+                Formatear
+            </button>
+
+        </div>
+
+        <pre id="codeOutput"></pre>
+
+
+        <div
+            id="previewContainer"
+            class="previewContainer"
+        >
+
+            <div class="previewHeader">
+                Vista previa HTML
+            </div>
+
+            <iframe
+                id="htmlPreview"
+                sandbox="allow-scripts"
+                title="Vista previa HTML"
+            ></iframe>
+
+        </div>
+
+    </aside>
+
+</main>
+
+
+<!-- =========================
+     MI BLOQUE
+========================= -->
+
+<div
+    id="myBlockModal"
+    class="modal hidden"
+>
+
+    <div class="modalContent">
+
+        <h2>Crear bloque</h2>
+
+        <label>
+            Nombre
+            <input id="myBlockName">
+        </label>
+
+        <label>
+            Color
+            <input
+                id="myBlockColor"
+                type="color"
+                value="#fc038c"
+            >
+        </label>
+
+        <div id="myBlockArguments"></div>
+
+        <button id="addArgumentButton">
+            + Argumento
+        </button>
+
+        <div class="modalButtons">
+
+            <button id="cancelMyBlock">
+                Cancelar
+            </button>
+
+            <button id="createMyBlock">
+                Crear
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     EDITAR BLOQUE
+========================= -->
+
+<div
+    id="blockEditModal"
+    class="modal hidden"
+>
+
+    <div class="modalContent large">
+
+        <h2>Editar bloque</h2>
+
+
+        <label>
+            Acción interna / data-action
+
+            <input
+                id="editDataAction"
+                placeholder="setTypeTo({dropdown1})"
+            >
+
+        </label>
+
+
+        <label>
+            Cantidad de dropdowns
+
+            <input
+                id="editDropdownCount"
+                type="number"
+                min="0"
+                value="0"
+            >
+
+        </label>
+
+
+        <div id="editDropdowns"></div>
+
+
+        <label>
+            SVG interno / data-src
+
+            <textarea
+                id="editDataSrc"
+                rows="10"
+                placeholder="<svg>...</svg>"
+            ></textarea>
+
+        </label>
+
+
+        <label class="checkbox">
+
+            <input
+                id="editIsC"
+                type="checkbox"
+            >
+
+            Bloque C
+
+        </label>
+
+
+        <div class="modalButtons">
+
+            <button id="cancelBlockEdit">
+                Cancelar
+            </button>
+
+            <button id="saveBlockEdit">
+                Guardar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     AÑADIR LENGUAJE / CATEGORÍA / BLOQUE
+========================= -->
+
+<div
+    id="libraryModal"
+    class="modal hidden"
+>
+
+    <div class="modalContent large">
+
+        <h2>Añadir a la biblioteca</h2>
+
+
+        <label>
+            Tipo
+
+            <select id="libraryItemType">
+
+                <option value="language">
+                    Lenguaje
+                </option>
+
+                <option value="category">
+                    Categoría
+                </option>
+
+                <option value="block">
+                    Bloque
+                </option>
+
+            </select>
+
+        </label>
+
+
+        <div id="libraryCommonFields">
+
+            <label>
+                Nombre
+
+                <input
+                    id="libraryItemName"
+                    placeholder="Nombre"
+                >
+
+            </label>
+
+
+            <label>
+                ID
+
+                <input
+                    id="libraryItemId"
+                    placeholder="mi_bloque"
+                >
+
+            </label>
+
+        </div>
+
+
+        <div id="libraryCategoryFields">
+
+            <label>
+                Lenguaje
+
+                <select id="libraryLanguage"></select>
+
+            </label>
+
+
+            <label>
+                Color de categoría
+
+                <input
+                    id="libraryCategoryColor"
+                    type="color"
+                    value="#666666"
+                >
+
+            </label>
+
+        </div>
+
+
+        <div id="libraryBlockFields">
+
+            <label>
+                Categoría
+
+                <select id="libraryCategory"></select>
+
+            </label>
+
+
+            <label>
+                Archivo SVG externo
+
+                <input
+                    id="libraryFile"
+                    placeholder="MiBloque.svg"
+                >
+
+            </label>
+
+
+            <label>
+                SVG interno / data-src
+
+                <textarea
+                    id="libraryDataSrc"
+                    rows="9"
+                    placeholder="<svg xmlns=&quot;http://www.w3.org/2000/svg&quot;>...</svg>"
+                ></textarea>
+
+            </label>
+
+
+            <label>
+                data-action
+
+                <input
+                    id="libraryAction"
+                    placeholder="setTypeTo({dropdown1})"
+                >
+
+            </label>
+
+
+            <label>
+                Cantidad de dropdowns
+
+                <input
+                    id="libraryDropdownCount"
+                    type="number"
+                    min="0"
+                    value="0"
+                >
+
+            </label>
+
+
+            <div id="libraryDropdowns"></div>
+
+
+            <label class="checkbox">
+
+                <input
+                    id="libraryIsC"
+                    type="checkbox"
+                >
+
+                Bloque C
+
+            </label>
+
+        </div>
+
+
+        <div class="modalButtons">
+
+            <button id="cancelLibrary">
+                Cancelar
+            </button>
+
+            <button id="createLibraryItem">
+                Crear
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="../assets/script/script.js"></script>
+
+</body>
+</html>

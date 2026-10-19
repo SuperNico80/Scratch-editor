@@ -1,0 +1,79 @@
+* {
+    font-family: "Segoe UI";
+    user-select: none;
+    -moz-user-select: none;
+}
+.topbar {
+    position: absolute;
+    display: flex;
+    width: calc(100vw - 20px); 
+    z-index: 9999;
+    border: solid #000000 3px;
+    padding-bottom: 14px;
+    background-color: #ffffff;
+}
+.topbar * {
+    justify-content: center;
+    align-items: center;
+}
+.categories {
+    overflow-x: auto;
+    height: 150px;
+    width: 32px;
+    position: absolute;
+    z-index: 9998;
+    border: solid #000000 3px;
+    display: grid;
+    overflow-x: hidden;
+    padding-top: 50px;
+    background-color: #ffffff;
+}
+.categories * {
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+.color {
+    border-radius: 100%;
+    width: 32px;
+    height: 32px;
+    background-color: #ff1c80;
+}
+.categories .category .categoryname {
+    font-size: 12px;
+}
+.categories, .topbar {
+    box-shadow: 5px 5px 10px 2px rgba(0, 0, 0, 0.3);
+}
+.category {
+    cursor: pointer;
+}
+.novisible {
+    display: none;
+}
+.blocks {
+    position: absolute;
+    z-index: 9990;
+    padding-top: 50px;
+    padding-left: 34px;
+    background-color: #ffffff;
+    box-shadow: 5px 5px 10px 2px rgba(0, 0, 0, 0.3);
+    border: solid #000000 2px;
+    width: 175px;
+}
+.blocks, .categories {
+    height: 200px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.block {
+    position: relative;
+    z-index: 10000;
+}
+.result {
+    position: absolute;
+    z-index: 10000;
+    padding-top: 15px;
+    padding-left: 32px;
+    background-color: #ffffff;
+    border: dashed #000000 1px;
+}

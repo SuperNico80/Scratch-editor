@@ -1,0 +1,1580 @@
+// Dragging script
+/*function makeDraggableClone(selector) {
+  const original = document.querySelector(selector);
+  if (!original) return;
+
+  original.addEventListener('mousedown', (e) => {
+    // 1. Clone the element
+    const clone = original.cloneNode(true);
+    
+    // 2. Style the clone for free movement
+    clone.style.position = 'absolute';
+    clone.style.left = `${e.clientX}px`;
+    clone.style.top = `${e.clientY}px`;
+    clone.style.zIndex = '1000';
+    
+    // Add clone to the page
+    document.body.appendChild(clone);
+
+    // 3. Track mouse movement
+    function onMouseMove(event) {
+      clone.style.left = `${event.clientX}px`;
+      clone.style.top = `${event.clientY}px`;
+    }
+
+    // 4. Stop dragging on mouse up
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+}*/
+function setupCloneAndDrag(selector) {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  // 1. Detectar el clic inicial
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.matches(selector)) return;
+
+    let targetToDrag = e.target;
+
+    /* 
+       SI EL ELEMENTO ES EL ORIGINAL (no está posicionado absolutamente aún),
+       creamos un clon en su lugar y arrastramos el clon.
+    */
+    if (window.getComputedStyle(targetToDrag).position !== 'absolute') {
+      const clone = targetToDrag.cloneNode(true);
+      const rect = targetToDrag.getBoundingClientRect();
+      
+      // Configurar el clon con el z-index requerido
+      clone.style.position = 'absolute';
+      clone.style.left = `${rect.left + window.scrollX}px`;
+      clone.style.top = `${rect.top + window.scrollY}px`;
+      clone.style.zIndex = '10000';
+      
+      document.body.appendChild(clone);
+      
+      // Ahora nuestro objetivo a arrastrar pasa a ser el clon recién creado
+      targetToDrag = clone;
+    }
+
+    // Activar el arrastre para el elemento (sea un clon viejo o el nuevo)
+    activeElement = targetToDrag;
+    activeElement.style.zIndex = '10000'; // Asegurar el z-index al interactuar
+
+    const rect = activeElement.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    
+    e.preventDefault(); // Evita selección de texto molesta
+  });
+
+  // 2. Mover el elemento activo por la pantalla
+  document.addEventListener('mousemove', (e) => {
+    if (!activeElement) return;
+
+    activeElement.style.left = `${e.clientX + window.scrollX - offsetX}px`;
+    activeElement.style.top = `${e.clientY + window.scrollY - offsetY}px`;
+  });
+
+  // 3. Soltar el elemento
+  document.addEventListener('mouseup', () => {
+    if (!activeElement) return;
+
+    // Run the snap check right before clearing the active element
+    const snappedTarget = snapScratchBlock(activeElement);
+    
+    if (snappedTarget) {
+      console.log("Snapped to block:", snappedTarget);
+      // Optional: Append the activeElement into the actual SVG logic structure here if needed
+    }
+
+    activeElement = null;
+  });
+
+}
+
+// Initialize the function with your desired CSS selector
+//setupCloneAndDrag('.draggable-box');
+
+// Usage:
+//makeDraggableClone('#my-element');
+// Select the parent div
+const blocks = document.querySelectorAll(".block")
+
+// Get all direct child elements
+//const children = parentDiv.length; 
+
+// Loop through them
+setupCloneAndDrag(".block")
+// Reusable function to check collision and move the principal element
+function snapToOverlappingBlock(movingBlock) {
+  // 1. Get the screen center of the moving block to detect collision
+  const screenRect = movingBlock.getBoundingClientRect();
+  const centerX = screenRect.left + screenRect.width / 2;
+  const centerY = screenRect.top + screenRect.height / 2;
+  
+  // 2. Find what is underneath the moving block
+  const targets = document.elementsFromPoint(centerX, centerY);
+  
+  // 3. Find the target block (ignoring itself and the SVG canvas background)
+  const targetBlock = targets.find(el => 
+    el !== movingBlock && 
+    el.tagName !== 'svg' && 
+    !movingBlock.contains(el) // Ensures it doesn't snap to its own child elements
+  );
+
+  // 4. If a target block is found, snap to its local SVG coordinates
+  if (targetBlock) {
+    // getBBox() gets coordinates relative to the SVG workspace, ignoring screen zoom/scroll
+    const targetBBox = targetBlock.getBBox();
+    
+    // Scratch blocks usually snap right below the target block
+    const snapX = targetBBox.x;
+    const snapY = targetBBox.y + targetBBox.height; // Positions it directly underneath
+    
+    // Apply the position using SVG transform translation
+    movingBlock.setAttribute('transform', `translate(${snapX}, ${snapY})`);
+    
+    return targetBlock;
+  }
+  
+  return null;
+}
+function snapScratchBlock(movingElement) {
+  if (!movingElement || typeof movingElement.getBoundingClientRect !== 'function') {
+    return null;
+  }
+
+  const movingRect = movingElement.getBoundingClientRect();
+  
+  // Escaneo central en la pestaña superior del bloque arrastrado
+  const checkX = movingRect.left + (movingRect.width / 2); 
+  const checkY = movingRect.top + 2; 
+  
+  const targets = document.elementsFromPoint(checkX, checkY);
+  
+  const validTargets = targets.filter(el => {
+    const isSelf = el === movingElement || movingElement.contains(el);
+    const isBackground = el === document.body || el === document.documentElement;
+    return !isSelf && !isBackground;
+  });
+
+  if (validTargets.length === 0) return null;
+
+  // Seleccionamos el bloque objetivo
+  const targetElement = validTargets[0];
+  const targetRect = targetElement.getBoundingClientRect();
+  
+  const NOTCH_DEPTH = 4; // Altura de encaje de la pestaña Scratch 3.0
+  
+  let snapLeft = targetRect.left + window.scrollX;
+  let snapTop = targetRect.top + targetRect.height - NOTCH_DEPTH + window.scrollY;
+  
+  const isCBlock = targetElement.getAttribute('data-isc') === 'true' || targetElement.closest('[data-isc="true"]');
+
+  if (isCBlock) {
+    // Buscamos el elemento SVG raíz del bloque objetivo si el target es un path interno
+    const targetSvg = targetElement.tagName.toLowerCase() === 'svg' ? targetElement : targetElement.closest('svg');
+    const relativeY = checkY - targetRect.top;
+    const C_BLOCK_TOP_BAR_HEIGHT = 40; 
+    const C_BLOCK_INNER_INDENT = 16; 
+
+    // Si se suelta en la mitad superior, va ADENTRO de la boca de la C
+    if (targetSvg && relativeY < targetRect.height / 2) {
+      snapLeft = targetRect.left + C_BLOCK_INNER_INDENT + window.scrollX;
+      snapTop = targetRect.top + C_BLOCK_TOP_BAR_HEIGHT - NOTCH_DEPTH + window.scrollY;
+      
+      // --- ACTUALIZACIÓN DE ALTURA SIN DEFORMACIÓN ---
+      // Calculamos cuántos píxeles extra necesita crecer la boca del bloque C
+      const extraHeight = movingRect.height - NOTCH_DEPTH;
+      
+      // Leemos el viewBox actual (ej. "0 0 161.3 39.1")
+      const currentViewBox = targetSvg.getAttribute('viewBox');
+      if (currentViewBox) {
+        const parts = currentViewBox.split(' ').map(Number);
+        if (parts.length === 4) {
+          // Incrementamos el alto del ViewBox y el atributo height nativo del SVG
+          const newHeight = parts[3] + extraHeight;
+          
+          targetSvg.setAttribute('viewBox', `${parts[0]} ${parts[1]} ${parts[2]} ${newHeight}`);
+          targetSvg.setAttribute('height', `${newHeight}`);
+        }
+      }
+    } 
+  }
+  
+  // Posicionamos el bloque arrastrado en sus coordenadas absolutas
+  movingElement.style.left = `${snapLeft}px`;
+  movingElement.style.top = `${snapTop}px`;
+  
+  return targetElement;
+}
+
+
+
+
+//snapScratchBlock(".block")
+function setupCloneAndDrag1(blockSelector, cBlockSelector) {
+  let activeElement = null;
+  let isDraggingClone = false;
+  let startX = 0;
+  let startY = 0;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  const SNAP_DISTANCE = 40; 
+  const BLOCK_HEIGHT = 42;  
+
+  // 1. Capturar el click inicial
+  document.addEventListener('mousedown', (e) => {
+    // Si el elemento no es un bloque común o si es un bloque C base, ignorar
+    if (!e.target.matches(blockSelector) || e.target.matches(cBlockSelector)) return;
+
+    const target = e.target;
+
+    // Si ya es un clon suelto en la pantalla, lo arrastramos directamente
+    if (target.classList.contains('is-clone')) {
+      activeElement = target;
+      isDraggingClone = true; // Ya es un clon, no necesita volver a clonarse
+
+      // Si estaba acoplado a un bloque C, lo liberamos
+      if (activeElement.dataset.snappedTo) {
+        delete activeElement.dataset.snappedTo;
+        delete activeElement.dataset.snapIndex;
+      }
+    } 
+    // Si es el bloque original del menú, guardamos su posición para clonarlo al mover
+    else {
+      activeElement = target;
+      isDraggingClone = false; // Marcamos que requiere clonación al arrastrar
+    }
+
+    // Guardar coordenadas iniciales del click y del elemento
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = activeElement.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    e.preventDefault();
+  });
+
+  // 2. Mover y crear el clon dinámicamente si es necesario
+  document.addEventListener('mousemove', (e) => {
+    if (!activeElement) return;
+
+    // Calcular cuánto se ha movido el mouse desde el mousedown
+    const moveX = e.clientX - startX;
+    const moveY = e.clientY - startY;
+    const distance = Math.sqrt(moveX * moveX + moveY * moveY);
+
+    // Si es el original y se movió más de 3px, CREAMOS EL CLON AQUÍ (Una sola vez)
+    if (!isDraggingClone && distance > 3) {
+      const clone = activeElement.cloneNode(true);
+      const rect = activeElement.getBoundingClientRect();
+
+      clone.classList.add('is-clone'); // Evita re-clonación eterna
+      clone.style.position = 'absolute';
+      clone.style.left = `${rect.left + window.scrollX}px`;
+      clone.style.top = `${rect.top + window.scrollY}px`;
+      clone.style.zIndex = '10000'; // Tu requerimiento de z-index alto
+
+      document.body.appendChild(clone);
+      
+      // Cambiamos el elemento activo al clon para que el usuario arrastre el clon
+      activeElement = clone;
+      isDraggingClone = true;
+    }
+
+    // Mover el elemento por la pantalla si ya está validado como clon arrastrable
+    if (isDraggingClone) {
+      activeElement.style.left = `${e.clientX + window.scrollX - offsetX}px`;
+      activeElement.style.top = `${e.clientY + window.scrollY - offsetY}px`;
+    }
+  });
+
+  // 3. Soltar y aplicar Snapping a CUALQUIER bloque C individual
+  document.addEventListener('mouseup', () => {
+    if (!activeElement || !isDraggingClone) {
+      activeElement = null;
+      return;
+    }
+
+    const cBlocks = document.querySelectorAll(cBlockSelector);
+    const activeRect = activeElement.getBoundingClientRect();
+    let snapped = false;
+
+    cBlocks.forEach((cBlock) => {
+      // Evitar que los bloques C del menú lateral reciban bloques (solo los del área de trabajo)
+      // Asumimos que los del menú no están posicionados de forma absoluta
+      if (window.getComputedStyle(cBlock).position !== 'absolute' && !cBlock.classList.contains('is-placed')) {
+        return; 
+      }
+
+      // Si un bloque C es arrastrado al área de trabajo, asegúrate de ponerle la clase 'is-placed' 
+      // o puedes remover esta validación si tus bloques C ya viven fijos en el espacio de trabajo.
+
+      // Asignar ID único dinámico por si hay múltiples bloques C del mismo tipo
+      if (!cBlock.id) {
+        cBlock.id = 'c-block-' + Math.random().toString(36).substr(2, 9);
+      }
+
+      const cRect = cBlock.getBoundingClientRect();
+
+      // Coordenadas de la boca del bloque C
+      const snapTargetX = cRect.left + 16;
+      const snapTargetY = cRect.top + 40;
+
+      // Contar bloques dentro de ESTE bloque C específico
+      const currentSnappedBlocks = document.querySelectorAll(`${blockSelector}[data-snapped-to="${cBlock.id}"]`);
+      const stackOffset = currentSnappedBlocks.length * BLOCK_HEIGHT;
+
+      const distanceX = Math.abs(activeRect.left - snapTargetX);
+      const distanceY = Math.abs(activeRect.top - (snapTargetY + stackOffset));
+
+      if (distanceX < SNAP_DISTANCE && distanceY < SNAP_DISTANCE) {
+        activeElement.dataset.snappedTo = cBlock.id;
+        activeElement.dataset.snapIndex = currentSnappedBlocks.length;
+
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = `${snapTargetX + window.scrollX}px`;
+        activeElement.style.top = `${snapTargetY + stackOffset + window.scrollY}px`;
+        activeElement.style.zIndex = '10000';
+        
+        snapped = true;
+      }
+    });
+
+    if (!snapped) {
+      activeElement.style.zIndex = '10000';
+    }
+
+    activeElement = null;
+  });
+}
+
+// Inicialización de la función
+//setupCloneAndDrag1('.block', '.c_block');
+
+
+
+function setupScratchWorkspace() {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  const SNAP_DISTANCE = 35; // Rango de atracción del imán
+
+  const menuContainer = document.querySelector('.blocks');
+  if (!menuContainer) return;
+
+  // 1. Inyectar estilos CSS dinámicos corregidos (Apilamiento vertical puro)
+  if (!document.getElementById('scratch-engine-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'scratch-engine-styles';
+    styleSheet.innerText = `
+      .scratch-wrapper {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: max-content !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .c-boca, .sub-stack {
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 3px !important;
+        padding: 4px 0 !important;
+        min-width: 100% !important;
+      }
+      .c-boca {
+        background-color: #ff920f !important; /* Ajusta al color naranja de tu bloque C */
+        margin-left: 18px !important;
+        width: 182px !important;
+        min-height: 16px !important;
+      }
+      .sub-stack {
+        min-height: 5px !important;
+        background: transparent !important;
+      }
+      .inner-svg-block {
+        display: block !important;
+        margin: 0 !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  }
+
+  // 2. Constructor de bloques para el lienzo
+  function createWorkspaceBlock(originalElement) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scratch-wrapper is-clone';
+    wrapper.style.position = 'absolute';
+    wrapper.style.zIndex = '10000'; // Z-index estricto solicitado
+
+    let contentContainer = document.createElement('div');
+    contentContainer.className = 'block-core-content';
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+
+    if (originalElement.classList.contains('c_block')) {
+      // ESTRUCTURA BLOQUE C (Dividido en 3 partes sin deformar el SVG)
+      contentContainer.innerHTML = `
+        <div style="width:200px; height:42px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" style="position:absolute; top:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+        <div class="c-boca"></div>
+        <div style="width:200px; height:26px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" style="position:absolute; bottom:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+      `;
+    } else {
+      // ESTRUCTURA BLOQUE NORMAL
+      const imgClone = originalElement.cloneNode(true);
+      imgClone.classList.remove('block');
+      imgClone.classList.add('inner-svg-block');
+      imgClone.style.position = 'static';
+      contentContainer.appendChild(imgClone);
+    }
+
+    // Zona receptora inferior: Aquí se acoplarán los bloques que se enganchen ABAJO de este bloque
+    const subStack = document.createElement('div');
+    subStack.className = 'sub-stack';
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  // 3. Capturar clicks e inicios de arrastre
+  document.addEventListener('pointerdown', (e) => {
+    // Si viene del menú de la izquierda (.blocks)
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains('block') && !e.target.classList.contains('c_block')) return;
+      
+      e.target.draggable = false;
+      const rect = e.target.getBoundingClientRect();
+      
+      const clone = createWorkspaceBlock(e.target);
+      clone.style.left = `${rect.left + window.scrollX}px`;
+      clone.style.top = `${rect.top + window.scrollY}px`;
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    // Si es un bloque que ya estaba suelto en el lienzo
+    else {
+      const wrapper = e.target.closest('.scratch-wrapper');
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      // DESACOPLE SEGURO: Al moverlo, se libera de su contenedor padre y vuelve al body global
+      const currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== 'BODY') {
+        const rect = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = `${rect.left + window.scrollX}px`;
+        activeElement.style.top = `${rect.top + window.scrollY}px`;
+        activeElement.style.zIndex = '10000';
+      }
+    }
+
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      activeElement.style.zIndex = '10001'; // Elevar sutilmente durante el movimiento
+      e.preventDefault();
+    }
+  });
+
+  // 4. Mover el elemento de forma fluida
+  document.addEventListener('pointermove', (e) => {
+    if (!activeElement) return;
+    activeElement.style.left = `${e.clientX + window.scrollX - offsetX}px`;
+    activeElement.style.top = `${e.clientY + window.scrollY - offsetY}px`;
+  });
+
+  // 5. Procesar Soltado (Snapping Universal 100% a prueba de errores)
+  document.addEventListener('pointerup', () => {
+    if (!activeElement) return;
+
+    activeElement.style.zIndex = '10000'; // Retorna a su z-index estándar requerido
+    const activeRect = activeElement.getBoundingClientRect();
+    
+    // Buscar todas las zonas receptoras válidas en la pantalla (bocas de C y sub-pilas inferiores)
+    const targets = Array.from(document.querySelectorAll('.c-boca, .sub-stack'))
+                         .filter(zone => !activeElement.contains(zone));
+    
+    let snapped = false;
+
+    for (let zone of targets) {
+      const zoneRect = zone.getBoundingClientRect();
+      const distX = Math.abs(activeRect.left - zoneRect.left);
+      
+      // Ajuste milimétrico para el snapping inferior de la pila
+      let distY = Math.abs(activeRect.top - zoneRect.top);
+      if (zone.classList.contains('sub-stack')) {
+        // El imán se calcula con la base del bloque objetivo anterior
+        const coreContent = zone.parentElement.querySelector('.block-core-content');
+        if (coreContent) {
+          const coreRect = coreContent.getBoundingClientRect();
+          distY = Math.abs(activeRect.top - coreRect.bottom);
+        }
+      }
+
+      if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {
+        activeElement.style.position = 'relative';
+        activeElement.style.left = '0px';
+        activeElement.style.top = '0px';
+        activeElement.style.zIndex = 'auto'; // Adopta el flujo natural relativo
+
+        // Insertar de manera limpia mediante appendChild sin romper nodos hermanos
+        zone.appendChild(activeElement);
+        snapped = true;
+        break;
+      }
+    }
+
+    activeElement = null;
+  });
+}
+
+// Inicializar el espacio de trabajo definitivo
+//setupScratchWorkspace();
+function setupScratchWorkspace1() {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  const SNAP_DISTANCE = 35; 
+
+  const menuContainer = document.querySelector('.blocks');
+  const outputContainer = document.getElementById('code-output'); // El div donde se mostrará el código
+  if (!menuContainer) return;
+
+  // 1. Inyectar estilos CSS dinámicos
+  if (!document.getElementById('scratch-engine-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'scratch-engine-styles';
+    styleSheet.innerText = `
+      .scratch-wrapper {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: max-content !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .c-boca, .sub-stack {
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 3px !important;
+        padding: 4px 0 !important;
+        min-width: 100% !important;
+      }
+      .c-boca {
+        background-color: #ff920f !important;
+        margin-left: 18px !important;
+        width: 182px !important;
+        min-height: 16px !important;
+      }
+      .sub-stack {
+        min-height: 5px !important;
+        background: transparent !important;
+      }
+      .inner-svg-block {
+        display: block !important;
+        margin: 0 !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  }
+
+  // 2. FUNCIÓN DE COMPILACIÓN: Lee todo el Lienzo y escribe en el DIV línea por línea
+  function compileWorkspace() {
+    if (!outputContainer) return;
+
+    let lines = [];
+
+    // Buscamos solo los bloques raíz en el lienzo (los que están sueltos directamente en el body)
+    const rootBlocks = Array.from(document.querySelectorAll('.scratch-wrapper.is-clone'))
+                            .filter(block => block.parentElement === document.body);
+
+    // Ordenar los bloques raíz de arriba a abajo según su posición vertical real en la pantalla
+    rootBlocks.sort((a, b) => {
+      return parseFloat(a.style.top) - parseFloat(b.style.top);
+    });
+
+    // Función interna recursiva para procesar la jerarquía de bloques
+    function parseBlock(blockWrapper) {
+      // Intentamos obtener el atributo data-action del bloque original clonado internamente
+      const sourceBlock = blockWrapper.querySelector('[data-action]');
+      if (!sourceBlock) return;
+
+      const action = sourceBlock.dataset.action;
+
+      if (sourceBlock.classList.contains('c_block')) {
+        // REGLA PARA BLOQUES C: Abrir etiqueta, parsear hijos internos de la boca, cerrar etiqueta
+        lines.push(action); // Ej: <html> o <head>
+
+        const boca = blockWrapper.querySelector('.c-boca');
+        if (boca) {
+          const innerChildren = boca.children;
+          for (let child of innerChildren) {
+            parseBlock(child);
+          }
+        }
+
+        // Generar el cierre de etiqueta correspondiente (ej: <html> se convierte en </html>)
+        if (action.startsWith('<') && action.endsWith('>')) {
+          const closingTag = `</${action.substring(1)}`;
+          lines.push(closingTag);
+        } else {
+          lines.push(`end_${action}`);
+        }
+      } else {
+        // REGLA PARA BLOQUES NORMALES: Agregar la acción directamente
+        lines.push(action);
+      }
+
+      // IMPORTANTE: Si este bloque tiene bloques acoplados ABAJO en su sub-stack, los procesamos secuencialmente
+      const subStack = blockWrapper.querySelector('.sub-stack');
+      if (subStack) {
+        const stackedChildren = subStack.children;
+        for (let child of stackedChildren) {
+          parseBlock(child);
+        }
+      }
+    }
+
+    // Procesar cada árbol de bloques independiente detectado
+    rootBlocks.forEach(block => parseBlock(block));
+
+    // Escribir el arreglo en el DIV de salida separando cada elemento en una nueva línea (\n)
+    outputContainer.textContent = lines.join('\n');
+  }
+
+  // 3. Constructor de bloques estructurales para el lienzo
+  function createWorkspaceBlock(originalElement) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scratch-wrapper is-clone';
+    wrapper.style.position = 'absolute';
+    wrapper.style.zIndex = '10000';
+
+    let contentContainer = document.createElement('div');
+    contentContainer.className = 'block-core-content';
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+
+    if (originalElement.classList.contains('c_block')) {
+      contentContainer.innerHTML = `
+        <div style="width:200px; height:42px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" class="c_block" data-action="${originalElement.dataset.action}" style="position:absolute; top:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+        <div class="c-boca"></div>
+        <div style="width:200px; height:26px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" style="position:absolute; bottom:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+      `;
+    } else {
+      const imgClone = originalElement.cloneNode(true);
+      imgClone.classList.remove('block');
+      imgClone.classList.add('inner-svg-block');
+      imgClone.style.position = 'static';
+      contentContainer.appendChild(imgClone);
+    }
+
+    const subStack = document.createElement('div');
+    subStack.className = 'sub-stack';
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  // 4. Capturar clicks e inicios de arrastre
+  document.addEventListener('pointerdown', (e) => {
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains('block') && !e.target.classList.contains('c_block')) return;
+      
+      e.target.draggable = false;
+      const rect = e.target.getBoundingClientRect();
+      
+      const clone = createWorkspaceBlock(e.target);
+      clone.style.left = `${rect.left + window.scrollX}px`;
+      clone.style.top = `${rect.top + window.scrollY}px`;
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    else {
+      const wrapper = e.target.closest('.scratch-wrapper');
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      const currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== 'BODY') {
+        const rect = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = `${rect.left + window.scrollX}px`;
+        activeElement.style.top = `${rect.top + window.scrollY}px`;
+        activeElement.style.zIndex = '10000';
+
+        // Compilar inmediatamente al desacoplar un bloque de la estructura
+        compileWorkspace();
+      }
+    }
+
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      activeElement.style.zIndex = '10001';
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!activeElement) return;
+    activeElement.style.left = `${e.clientX + window.scrollX - offsetX}px`;
+    activeElement.style.top = `${e.clientY + window.scrollY - offsetY}px`;
+  });
+
+  // 5. Procesar Soltado y Compilación Final tras un acople con éxito
+  document.addEventListener('pointerup', () => {
+    if (!activeElement) return;
+
+    activeElement.style.zIndex = '10000';
+    const activeRect = activeElement.getBoundingClientRect();
+    
+    const targets = Array.from(document.querySelectorAll('.c-boca, .sub-stack'))
+                         .filter(zone => !activeElement.contains(zone));
+    
+    let snapped = false;
+
+    for (let zone of targets) {
+      const zoneRect = zone.getBoundingClientRect();
+      const distX = Math.abs(activeRect.left - zoneRect.left);
+      
+      let distY = Math.abs(activeRect.top - zoneRect.top);
+      if (zone.classList.contains('sub-stack')) {
+        const coreContent = zone.parentElement.querySelector('.block-core-content');
+        if (coreContent) {
+          const coreRect = coreContent.getBoundingClientRect();
+          distY = Math.abs(activeRect.top - coreRect.bottom);
+        }
+      }
+
+      if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {
+        activeElement.style.position = 'relative';
+        activeElement.style.left = '0px';
+        activeElement.style.top = '0px';
+        activeElement.style.zIndex = 'auto';
+
+        zone.appendChild(activeElement);
+        snapped = true;
+        break;
+      }
+    }
+
+    // Actualizar el div receptor del código tanto si se acopló con éxito como si se soltó en el vacío
+    compileWorkspace();
+
+    activeElement = null;
+  });
+}
+
+// Inicializar el motor con compilador integrado
+//setupScratchWorkspace1();
+function setupScratchWorkspace2() {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  const SNAP_DISTANCE = 35; 
+
+  const menuContainer = document.querySelector('.blocks');
+  const outputContainer = document.getElementById('code-output'); 
+  if (!menuContainer) return;
+
+  // 1. Inyectar estilos CSS (Líneas nuevas garantizadas + dropdowns alineados)
+  if (!document.getElementById('scratch-engine-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'scratch-engine-styles';
+    styleSheet.innerText = `
+      #code-output {
+        white-space: pre-wrap !important;
+        font-family: monospace;
+      }
+      .scratch-wrapper {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: max-content !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .block-core-content {
+        position: relative !important;
+      }
+      .c-boca, .sub-stack {
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 3px !important;
+        padding: 4px 0 !important;
+        min-width: 100% !important;
+      }
+      .c-boca {
+        background-color: #ff920f !important;
+        margin-left: 18px !important;
+        width: 182px !important;
+        min-height: 16px !important;
+      }
+      .sub-stack {
+        min-height: 5px !important;
+        background: transparent !important;
+      }
+      .inner-svg-block {
+        display: block !important;
+        margin: 0 !important;
+      }
+      .sb3-literal-number-dropdown {
+        position: absolute !important;
+        left: 65px !important;       
+        top: 8px !important;         
+        width: 50px !important;      
+        height: 20px !important;
+        opacity: 0.8 !important;     
+        cursor: pointer !important;
+        z-index: 10005 !important;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 11px;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  }
+
+  // 2. Compilador en tiempo real
+  function compileWorkspace() {
+    if (!outputContainer) return;
+
+    let lines = [];
+    const rootBlocks = Array.from(document.querySelectorAll('.scratch-wrapper.is-clone'))
+                            .filter(block => block.parentElement === document.body);
+
+    rootBlocks.sort((a, b) => parseFloat(a.style.top) - parseFloat(b.style.top));
+
+    function parseBlock(blockWrapper) {
+      const sourceBlock = blockWrapper.querySelector('[data-action]');
+      if (!sourceBlock) return;
+
+      let action = sourceBlock.dataset.action;
+
+      // Procesar valor del dropdown si existe
+      const dropdown = blockWrapper.querySelector('.sb3-literal-number-dropdown');
+      if (dropdown) {
+        action = action.replace('%VAL%', dropdown.value);
+      }
+
+      if (sourceBlock.classList.contains('c_block')) {
+        lines.push(action); 
+
+        const boca = blockWrapper.querySelector('.c-boca');
+        if (boca) {
+          const innerChildren = boca.children;
+          for (let child of innerChildren) {
+            parseBlock(child);
+          }
+        }
+
+        if (action.startsWith('<') && action.endsWith('>')) {
+          const tagName = action.match(/<([^\s>]+)/);
+          lines.push(`</${tagName ? tagName[1] : ''}>`);
+        } else {
+          lines.push(`end_${action}`);
+        }
+      } else {
+        lines.push(action);
+      }
+
+      const subStack = blockWrapper.querySelector('.sub-stack');
+      if (subStack) {
+        const stackedChildren = subStack.children;
+        for (let child of stackedChildren) {
+          parseBlock(child);
+        }
+      }
+    }
+
+    rootBlocks.forEach(block => parseBlock(block));
+    outputContainer.textContent = lines.join('\n');
+  }
+
+  // 3. Constructor de envoltorios
+  function createWorkspaceBlock(originalElement) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scratch-wrapper is-clone';
+    wrapper.style.position = 'absolute';
+    wrapper.style.zIndex = '10000';
+
+    let contentContainer = document.createElement('div');
+    contentContainer.className = 'block-core-content';
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+
+    if (originalElement.classList.contains('c_block')) {
+      contentContainer.innerHTML = `
+        <div style="width:200px; height:42px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" class="c_block" data-action="${originalElement.dataset.action}" style="position:absolute; top:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+        <div class="c-boca"></div>
+        <div style="width:200px; height:26px; overflow:hidden; position:relative;">
+          <img src="${originalElement.src}" style="position:absolute; bottom:0; left:0; width:200px; height:auto;" draggable="false">
+        </div>
+      `;
+    } else {
+      const imgClone = originalElement.cloneNode(true);
+      imgClone.classList.remove('block');
+      imgClone.classList.add('inner-svg-block');
+      imgClone.style.position = 'static';
+      contentContainer.appendChild(imgClone);
+
+      if (originalElement.dataset.action && originalElement.dataset.action.includes('%VAL%')) {
+        const select = document.createElement('select');
+        select.className = 'sb3-label sb3-literal-number-dropdown';
+        select.innerHTML = `
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        `;
+        select.addEventListener('pointerdown', (e) => e.stopPropagation());
+        select.addEventListener('change', () => compileWorkspace());
+        contentContainer.appendChild(select);
+      }
+    }
+
+    const subStack = document.createElement('div');
+    subStack.className = 'sub-stack';
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  // 4. Capturar eventos PointerDown
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.classList.contains('sb3-literal-number-dropdown')) return;
+
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains('block') && !e.target.classList.contains('c_block')) return;
+      
+      e.target.draggable = false;
+      const rect = e.target.getBoundingClientRect();
+      
+      const clone = createWorkspaceBlock(e.target);
+      clone.style.left = `${rect.left + window.scrollX}px`;
+      clone.style.top = `${rect.top + window.scrollY}px`;
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    else {
+      const wrapper = e.target.closest('.scratch-wrapper');
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      const currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== 'BODY') {
+        const rect = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = `${rect.left + window.scrollX}px`;
+        activeElement.style.top = `${rect.top + window.scrollY}px`;
+        activeElement.style.zIndex = '10000';
+
+        compileWorkspace();
+      }
+    }
+
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      activeElement.style.zIndex = '10001';
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!activeElement) return;
+    activeElement.style.left = `${e.clientX + window.scrollX - offsetX}px`;
+    activeElement.style.top = `${e.clientY + window.scrollY - offsetY}px`;
+  });
+
+  // 5. Soltar y acoplar
+  document.addEventListener('pointerup', () => {
+    if (!activeElement) return;
+
+    activeElement.style.zIndex = '10000';
+    const activeRect = activeElement.getBoundingClientRect();
+    
+    const targets = Array.from(document.querySelectorAll('.c-boca, .sub-stack'))
+                         .filter(zone => !activeElement.contains(zone));
+    
+    let snapped = false;
+
+    for (let zone of targets) {
+      const zoneRect = zone.getBoundingClientRect();
+      const distX = Math.abs(activeRect.left - zoneRect.left);
+      
+      let distY = Math.abs(activeRect.top - zoneRect.top);
+      if (zone.classList.contains('sub-stack')) {
+        const coreContent = zone.parentElement.querySelector('.block-core-content');
+        if (coreContent) {
+          const coreRect = coreContent.getBoundingClientRect();
+          distY = Math.abs(activeRect.top - coreRect.bottom);
+        }
+      }
+
+      if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {
+        activeElement.style.position = 'relative';
+        activeElement.style.left = '0px';
+        activeElement.style.top = '0px';
+        activeElement.style.zIndex = 'auto';
+
+        zone.appendChild(activeElement);
+        snapped = true;
+        break;
+      }
+    }
+
+    compileWorkspace();
+    activeElement = null;
+  });
+}
+
+//setupScratchWorkspace2();
+function setupScratchWorkspace3() {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  const SNAP_DISTANCE = 35; 
+
+  const menuContainer = document.querySelector('.blocks');
+  const outputContainer = document.getElementById('code-output'); 
+  if (!menuContainer) return;
+
+  // 1. Inyectar estilos CSS de forma segura usando strings estándar concatenados
+  if (!document.getElementById('scratch-engine-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'scratch-engine-styles';
+    styleSheet.innerText = 
+      "#code-output { white-space: pre-wrap !important; font-family: monospace; }\n" +
+      ".scratch-wrapper { display: flex !important; flex-direction: column !important; align-items: flex-start !important; width: max-content !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }\n" +
+      ".block-core-content { position: relative !important; }\n" +
+      ".c-boca, .sub-stack { box-sizing: border-box !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 3px !important; padding: 4px 0 !important; min-width: 100% !important; }\n" +
+      ".c-boca { background-color: #ff920f !important; margin-left: 18px !important; width: 182px !important; min-height: 16px !important; }\n" +
+      ".sub-stack { min-height: 5px !important; background: transparent !important; }\n" +
+      ".inner-svg-block { display: block !important; margin: 0 !important; }\n" +
+      ".sb3-literal-number-dropdown { position: absolute !important; left: 65px !important; top: 8px !important; width: 50px !important; height: 20px !important; opacity: 0.8 !important; cursor: pointer !important; z-index: 10005 !important; border-radius: 4px; border: 1px solid #ccc; font-size: 11px; }";
+    document.head.appendChild(styleSheet);
+  }
+
+  // 2. Compilador recursivo en tiempo real
+  function compileWorkspace() {
+    if (!outputContainer) return;
+
+    let lines = [];
+    const rootBlocks = Array.from(document.querySelectorAll('.scratch-wrapper.is-clone'))
+                            .filter(block => block.parentElement === document.body);
+
+    rootBlocks.sort((a, b) => parseFloat(a.style.top) - parseFloat(b.style.top));
+
+    function parseBlock(blockWrapper) {
+      const sourceBlock = blockWrapper.querySelector('[data-action]');
+      if (!sourceBlock) return;
+
+      let action = sourceBlock.dataset.action;
+
+      // Reemplazar marcador si existe un dropdown activo
+      const dropdown = blockWrapper.querySelector('.sb3-literal-number-dropdown');
+      if (dropdown) {
+        action = action.replace('%VAL%', dropdown.value);
+      }
+
+      if (sourceBlock.classList.contains('c_block')) {
+        lines.push(action); 
+
+        const boca = blockWrapper.querySelector('.c-boca');
+        if (boca) {
+          const innerChildren = boca.children;
+          for (let child of innerChildren) {
+            parseBlock(child);
+          }
+        }
+
+        if (action.startsWith('<') && action.endsWith('>')) {
+          const tagName = action.match(/<([^\s>]+)/);
+          lines.push('</' + (tagName ? tagName[1] : '') + '>');
+        } else {
+          lines.push('end_' + action);
+        }
+      } else {
+        lines.push(action);
+      }
+
+      const subStack = blockWrapper.querySelector('.sub-stack');
+      if (subStack) {
+        const stackedChildren = subStack.children;
+        for (let child of stackedChildren) {
+          parseBlock(child);
+        }
+      }
+    }
+
+    rootBlocks.forEach(block => parseBlock(block));
+    outputContainer.textContent = lines.join('\n');
+  }
+
+  // 3. Constructor estructural de bloques para el lienzo
+  function createWorkspaceBlock(originalElement) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scratch-wrapper is-clone';
+    wrapper.style.position = 'absolute';
+    wrapper.style.zIndex = '10000';
+
+    let contentContainer = document.createElement('div');
+    contentContainer.className = 'block-core-content';
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+
+    if (originalElement.classList.contains('c_block')) {
+      contentContainer.innerHTML = 
+        '<div style="width:200px; height:42px; overflow:hidden; position:relative;">' +
+          '<img src="' + originalElement.src + '" class="c_block" data-action="' + originalElement.dataset.action + '" style="position:absolute; top:0; left:0; width:200px; height:auto;" draggable="false">' +
+        '</div>' +
+        '<div class="c-boca"></div>' +
+        '<div style="width:200px; height:26px; overflow:hidden; position:relative;">' +
+          '<img src="' + originalElement.src + '" style="position:absolute; bottom:0; left:0; width:200px; height:auto;" draggable="false">' +
+        '</div>';
+    } else {
+      const imgClone = originalElement.cloneNode(true);
+      imgClone.classList.remove('block');
+      imgClone.classList.add('inner-svg-block');
+      imgClone.style.position = 'static';
+      contentContainer.appendChild(imgClone);
+
+      // Evaluar la inyección del dropdown personalizado mediante data-listoptions
+      if (originalElement.dataset.action && originalElement.dataset.action.includes('%VAL%')) {
+        const select = document.createElement('select');
+        select.className = 'sb3-label sb3-literal-number-dropdown';
+        
+        let optionsHTML = '';
+        
+        if (originalElement.dataset.listoptions) {
+          try {
+            const optionsArray = JSON.parse(originalElement.dataset.listoptions);
+            optionsArray.forEach(opt => {
+              optionsHTML += '<option value="' + opt + '">' + opt + '</option>';
+            });
+          } catch (e) {
+            console.error("Error al procesar data-listoptions:", e);
+            optionsHTML = '<option value="1">1</option>';
+          }
+        } else {
+          optionsHTML = '<option value="1">1</option><option value="2">2</option>';
+        }
+
+        select.innerHTML = optionsHTML;
+        
+        select.addEventListener('pointerdown', (e) => e.stopPropagation());
+        select.addEventListener('change', () => compileWorkspace());
+        contentContainer.appendChild(select);
+      }
+    }
+
+    const subStack = document.createElement('div');
+    subStack.className = 'sub-stack';
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  // 4. Capturar eventos PointerDown globales
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.classList.contains('sb3-literal-number-dropdown')) return;
+
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains('block') && !e.target.classList.contains('c_block')) return;
+      
+      e.target.draggable = false;
+      const rect = e.target.getBoundingClientRect();
+      
+      const clone = createWorkspaceBlock(e.target);
+      clone.style.left = (rect.left + window.scrollX) + 'px';
+      clone.style.top = (rect.top + window.scrollY) + 'px';
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    else {
+      const wrapper = e.target.closest('.scratch-wrapper');
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      const currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== 'BODY') {
+        const rect = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = (rect.left + window.scrollX) + 'px';
+        activeElement.style.top = (rect.top + window.scrollY) + 'px';
+        activeElement.style.zIndex = '10000';
+
+        compileWorkspace();
+      }
+    }
+
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      activeElement.style.zIndex = '10001';
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!activeElement) return;
+    activeElement.style.left = (e.clientX + window.scrollX - offsetX) + 'px';
+    activeElement.style.top = (e.clientY + window.scrollY - offsetY) + 'px';
+  });
+
+  // 5. Resolver Snapping y forzar compilación final
+  document.addEventListener('pointerup', () => {
+    if (!activeElement) return;
+
+    activeElement.style.zIndex = '10000';
+    const activeRect = activeElement.getBoundingClientRect();
+    
+    const targets = Array.from(document.querySelectorAll('.c-boca, .sub-stack'))
+                         .filter(zone => !activeElement.contains(zone));
+    
+    let snapped = false;
+
+    for (let zone of targets) {
+      const zoneRect = zone.getBoundingClientRect();
+      const distX = Math.abs(activeRect.left - zoneRect.left);
+      
+      let distY = Math.abs(activeRect.top - zoneRect.top);
+      if (zone.classList.contains('sub-stack')) {
+        const coreContent = zone.parentElement.querySelector('.block-core-content');
+        if (coreContent) {
+          const coreRect = coreContent.getBoundingClientRect();
+          distY = Math.abs(activeRect.top - coreRect.bottom);
+        }
+      }
+
+      if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {
+        activeElement.style.position = 'relative';
+        activeElement.style.left = '0px';
+        activeElement.style.top = '0px';
+        activeElement.style.zIndex = 'auto';
+
+        zone.appendChild(activeElement);
+        snapped = true;
+        break;
+      }
+    }
+
+    compileWorkspace();
+    activeElement = null;
+  });
+}
+
+// Ejecutar inicialización del canvas
+//setupScratchWorkspace3();
+function setupScratchWorkspace4() {
+  let activeElement = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  const SNAP_DISTANCE = 35; 
+
+  const menuContainer = document.querySelector('.blocks');
+  const outputContainer = document.getElementById('code-output'); 
+  if (!menuContainer) return;
+
+  // 1. Inyectar estilos CSS de forma segura usando arreglos unidos
+  if (!document.getElementById('scratch-engine-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'scratch-engine-styles';
+    styleSheet.innerText = [
+      "#code-output { white-space: pre-wrap !important; font-family: monospace; }",
+      ".scratch-wrapper { display: flex !important; flex-direction: column !important; align-items: flex-start !important; width: max-content !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }",
+      ".block-core-content { position: relative !important; }",
+      ".c-top-container { position: relative !important; width: 200px; height: 42px; }",
+      ".c-boca, .sub-stack { box-sizing: border-box !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 3px !important; padding: 4px 0 !important; min-width: 100% !important; }",
+      ".c-boca { background-color: #ff920f !important; margin-left: 18px !important; width: 182px !important; min-height: 16px !important; }",
+      ".sub-stack { min-height: 5px !important; background: transparent !important; }",
+      ".inner-svg-block { display: block !important; margin: 0 !important; }",
+      ".sb3-literal-number-dropdown { position: absolute !important; left: 110px !important; top: 10px !important; width: 55px !important; height: 20px !important; opacity: 1 !important; cursor: pointer !important; z-index: 10005 !important; border-radius: 4px; border: 1px solid #ccc; font-size: 11px; }"
+    ].join("\n");
+    document.head.appendChild(styleSheet);
+  }
+
+  // 2. Compilador universal en tiempo real
+  function compileWorkspace() {
+    if (!outputContainer) return;
+
+    let lines = [];
+    const rootBlocks = Array.from(document.querySelectorAll('.scratch-wrapper.is-clone'))
+                            .filter(block => block.parentElement === document.body);
+
+    rootBlocks.sort((a, b) => parseFloat(a.style.top) - parseFloat(b.style.top));
+
+    function parseBlock(blockWrapper) {
+      const sourceBlock = blockWrapper.querySelector('[data-action]');
+      if (!sourceBlock) return;
+
+      let action = sourceBlock.dataset.action;
+
+      const dropdown = blockWrapper.querySelector('.sb3-literal-number-dropdown');
+      if (dropdown) {
+        action = action.replace('%VAL%', dropdown.value);
+      }
+
+      if (sourceBlock.classList.contains('c_block')) {
+        lines.push(action); 
+
+        const boca = blockWrapper.querySelector('.c-boca');
+        if (boca) {
+          const innerChildren = boca.children;
+          for (let child of innerChildren) {
+            parseBlock(child);
+          }
+        }
+
+        if (action.startsWith('<') && action.endsWith('>')) {
+          const tagName = action.match(/<([^\s>]+)/);
+          const cleanTag = tagName ? tagName[1] : '';
+          // Evitamos strings literales de cierre concatenando caracteres aislados
+          const closeTagStr = "".concat("<", "/", cleanTag, ">");
+          lines.push(closeTagStr);
+        } else {
+          lines.push("end_".concat(action));
+        }
+      } else {
+        lines.push(action);
+      }
+
+      const subStack = blockWrapper.querySelector('.sub-stack');
+      if (subStack) {
+        const stackedChildren = subStack.children;
+        for (let child of stackedChildren) {
+          parseBlock(child);
+        }
+      }
+    }
+
+    rootBlocks.forEach(block => parseBlock(block));
+    outputContainer.textContent = lines.join('\n');
+  }
+
+  function buildOptionsHTML(element) {
+    let optionsHTML = '';
+    if (element.dataset.listoptions) {
+      try {
+        const optionsArray = JSON.parse(element.dataset.listoptions);
+        optionsArray.forEach(opt => {
+          optionsHTML += "".concat('<option value="', opt, '">', opt, '</option>');
+        });
+      } catch (e) {
+        console.error("Error al procesar data-listoptions:", e);
+        optionsHTML = '<option value="default">Error</option>';
+      }
+    } else {
+      optionsHTML = '<option value="1">1</option><option value="2">2</option>';
+    }
+    return optionsHTML;
+  }
+
+  // 3. Constructor de estructuras para el lienzo
+  function createWorkspaceBlock(originalElement) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scratch-wrapper is-clone';
+    wrapper.style.position = 'absolute';
+    wrapper.style.zIndex = '10000';
+
+    let contentContainer = document.createElement('div');
+    contentContainer.className = 'block-core-content';
+    contentContainer.style.display = 'flex';
+    contentContainer.style.flexDirection = 'column';
+
+    const hasDropdown = originalElement.dataset.action && originalElement.dataset.action.includes('%VAL%');
+
+    if (originalElement.classList.contains('c_block')) {
+      const topContainer = document.createElement('div');
+      topContainer.className = 'c-top-container';
+      topContainer.innerHTML = "".concat('<img src="', originalElement.src, '" class="c_block" data-action="', originalElement.dataset.action, '" style="position:absolute; top:0; left:0; width:200px; height:auto;" draggable="false">');
+      
+      if (hasDropdown) {
+        const select = document.createElement('select');
+        select.className = 'sb3-label sb3-literal-number-dropdown';
+        select.innerHTML = buildOptionsHTML(originalElement);
+        
+        select.addEventListener('pointerdown', (e) => e.stopPropagation());
+        select.addEventListener('mousedown', (e) => e.stopPropagation());
+        select.addEventListener('change', () => compileWorkspace());
+        topContainer.appendChild(select);
+      }
+
+      contentContainer.appendChild(topContainer);
+
+      const boca = document.createElement('div');
+      boca.className = 'c-boca';
+      contentContainer.appendChild(boca);
+
+      const bottomContainer = document.createElement('div');
+      bottomContainer.style.cssText = 'width:200px; height:26px; overflow:hidden; position:relative;';
+      bottomContainer.innerHTML = "".concat('<img src="', originalElement.src, '" style="position:absolute; bottom:0; left:0; width:200px; height:auto;" draggable="false">');
+      contentContainer.appendChild(bottomContainer);
+
+    } else {
+      const imgClone = originalElement.cloneNode(true);
+      imgClone.classList.remove('block');
+      imgClone.classList.add('inner-svg-block');
+      imgClone.style.position = 'static';
+      contentContainer.appendChild(imgClone);
+
+      if (hasDropdown) {
+        const select = document.createElement('select');
+        select.className = 'sb3-label sb3-literal-number-dropdown';
+        select.innerHTML = buildOptionsHTML(originalElement);
+        
+        select.addEventListener('pointerdown', (e) => e.stopPropagation());
+        select.addEventListener('mousedown', (e) => e.stopPropagation());
+        select.addEventListener('change', () => compileWorkspace());
+        contentContainer.appendChild(select);
+      }
+    }
+
+    const subStack = document.createElement('div');
+    subStack.className = 'sub-stack';
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  // 4. Capturar eventos PointerDown globales
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.classList.contains('sb3-literal-number-dropdown')) return;
+
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains('block') && !e.target.classList.contains('c_block')) return;
+      
+      e.target.draggable = false;
+      const rect = e.target.getBoundingClientRect();
+      
+      const clone = createWorkspaceBlock(e.target);
+      clone.style.left = (rect.left + window.scrollX) + 'px';
+      clone.style.top = (rect.top + window.scrollY) + 'px';
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    else {
+      const wrapper = e.target.closest('.scratch-wrapper');
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      const currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== 'BODY') {
+        const rect = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = 'absolute';
+        activeElement.style.left = (rect.left + window.scrollX) + 'px';
+        activeElement.style.top = (rect.top + window.scrollY) + 'px';
+        activeElement.style.zIndex = '10000';
+
+        compileWorkspace();
+      }
+    }
+
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      activeElement.style.zIndex = '10001';
+      e.preventDefault(); 
+    }
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!activeElement) return;
+    activeElement.style.left = (e.clientX + window.scrollX - offsetX) + 'px';
+    activeElement.style.top = (e.clientY + window.scrollY - offsetY) + 'px';
+  });
+
+  // 5. Resolver Snapping
+  document.addEventListener('pointerup', () => {
+    if (!activeElement) return;
+
+    activeElement.style.zIndex = '10000';
+    const activeRect = activeElement.getBoundingClientRect();
+    
+    const targets = Array.from(document.querySelectorAll('.c-boca, .sub-stack'))
+                         .filter(zone => !activeElement.contains(zone));
+    
+    let snapped = false;
+
+    for (let zone of targets) {
+      const zoneRect = zone.getBoundingClientRect();
+      const distX = Math.abs(activeRect.left - zoneRect.left);
+      
+      let distY = Math.abs(activeRect.top - zoneRect.top);
+      if (zone.classList.contains('sub-stack')) {
+    const coreContent = zone.parentElement.querySelector('.block-core-content');
+    if (coreContent) {
+        const coreRect = coreContent.getBoundingClientRect();
+        distY = Math.abs(activeRect.top - coreRect.bottom);
+    }
+}
+if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {
+    activeElement.style.position = 'relative';
+    activeElement.style.left = '0px';activeElement.style.top = '0px';
+    activeElement.style.zIndex = 'auto';zone.appendChild(activeElement);
+    snapped = true;break;}}compileWorkspace();activeElement = null;
+})
+}
+//setupScratchWorkspace4();

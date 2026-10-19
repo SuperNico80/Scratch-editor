@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solución Definitiva: Blockly con Bloques Visibles</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        /* Contenedor del espacio de trabajo visual */
+        #blocklyArea {
+            width: 100%;
+            height: 500px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        /* Visualizador de código en tiempo real */
+        .output-panel {
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .output-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #00b0ff;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+        }
+    </style>
+
+    <!-- Cargamos las librerías globales optimizadas por la infraestructura de Cloudflare -->
+    <!-- 1. Núcleo principal de Blockly -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/13.4.0/blockly.min.js" integrity="sha512-pZWw+3ZtKXFhD92teP6ev/VfN+oaCAl1MXF0l+PGXgltv5+XBndGJphd+fL4cqe8gzdvuNLICNdEJvKeESEAzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- 2. Bloques estándar de la biblioteca (Lógica, bucles, etc.) -->
+    <script src="https://cloudflare.com"></script>
+    <!-- 3. Generador de código JavaScript -->
+    <script src="https://cloudflare.com"></script>
+    <!-- 4. Archivo de traducción de interfaz (Español) -->
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+    <h1>Entorno Blockly Funcional</h1>
+    <p>Las categorías lógicas y de datos del menú lateral ahora se renderizarán correctamente.</p>
+    
+    <div id="blocklyArea"></div>
+
+    <div class="output-panel">
+        <h2>Código JS Producido:</h2>
+        <pre><code id="codeOutput">// Modifica los bloques para ver el código estructurado aquí...</code></pre>
+    </div>
+
+    <script>
+        // No requerimos de "type=module", lo que previene problemas silenciosos de herencia de objetos libres.
+        
+        // 1. Estructura JSON para registrar las categorías que invocan los bloques estándar ya alojados globalmente
+        const toolbox = {
+            "kind": "categoryToolbox",
+            "contents": [
+                {
+                    "kind": "category",
+                    "name": "Lógica",
+                    "categorystyle": "logic_category",
+                    "contents": [
+                        { "kind": "block", "type": "controls_if" },
+                        { "kind": "block", "type": "logic_compare" },
+                        { "kind": "block", "type": "logic_operation" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Bucles",
+                    "categorystyle": "loop_category",
+                    "contents": [
+                        { "kind": "block", "type": "controls_repeat_ext" },
+                        { "kind": "block", "type": "controls_whileUntil" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Matemáticas",
+                    "categorystyle": "math_category",
+                    "contents": [
+                        { "kind": "block", "type": "math_number" },
+                        { "kind": "block", "type": "math_arithmetic" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Texto",
+                    "categorystyle": "text_category",
+                    "contents": [
+                        { "kind": "block", "type": "text" },
+                        { "kind": "block", "type": "text_print" }
+                    ]
+                }
+            ]
+        };
+
+        // 2. Inyectar la interfaz visual en el lienzo especificado
+        const workspace = Blockly.inject('blocklyArea', {
+            toolbox: toolbox,
+            scrollbars: true,
+            trashcan: true,
+            grid: {
+                spacing: 20,
+                length: 3,
+                colour: '#ddd',
+                snap: true
+            }
+        });
+
+        // 3. Capturador dinámico para transformar el árbol visual de bloques a cadenas string de JavaScript
+        workspace.addChangeListener(() => {
+            // Accedemos de manera segura al generador instanciado globalmente por javascript_compressed.js
+            const code = javascript.javascriptGenerator.workspaceToCode(workspace);
+            document.getElementById('codeOutput').innerText = code || "// Inserta bloques en el panel para ver el código resultante...";
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockly con Estilo Scratch</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #e5effc; /* Color de fondo más amigable estilo Scratch */
+            color: #333;
+        }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+            color: #4d4d4d;
+        }
+        p {
+            color: #777;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        /* Contenedor del espacio de trabajo visual */
+        #blocklyArea {
+            width: 100%;
+            height: 550px;
+            background: #fff;
+            border: 2px solid #cfdbec;
+            border-radius: 10px; /* Bordes redondeados para la interfaz */
+            overflow: hidden;
+        }
+        /* Estilos personalizados para asemejar la Toolbox a Scratch */
+        .blocklyToolboxDiv {
+            background-color: #f9f9f9 !important;
+            border-right: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        /* Visualizador de código en tiempo real */
+        .output-panel {
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            color: #f4f4f4;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .output-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #4c97ff; /* Azul Scratch */
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        code {
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+        }
+    </style>
+
+    <!-- Librerías globales desde la CDN de Cloudflare -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/13.4.0/blockly.min.js" integrity="sha512-pZWw+3ZtKXFhD92teP6ev/VfN+oaCAl1MXF0l+PGXgltv5+XBndGJphd+fL4cqe8gzdvuNLICNdEJvKeESEAzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cloudflare.com"></script>
+    <script src="https://cloudflare.com"></script>
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+    <h1>Blockly Interfaz Scratch</h1>
+    <p>Los bloques ahora utilizan colores vivos, formas redondeadas y fuentes grandes.</p>
+    
+    <div id="blocklyArea"></div>
+
+    <div class="output-panel">
+        <h2>Código JS Producido:</h2>
+        <pre><code id="codeOutput">// Modifica los bloques para ver el código estructurado aquí...</code></pre>
+    </div>
+
+    <script>
+        // 1. Estructura JSON de la Caja de Herramientas con colores estilo Scratch
+        const toolbox = {
+            "kind": "categoryToolbox",
+            "contents": [
+                {
+                    "kind": "category",
+                    "name": "Movimiento", // Reemplazamos Lógica por categorías más comunes en Scratch
+                    "colour": "#4C97FF",  // Azul clásico de Scratch
+                    "contents": [
+                        { "kind": "block", "type": "controls_if" },
+                        { "kind": "block", "type": "logic_compare" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Control",
+                    "colour": "#FFAB19",  // Naranja de Scratch
+                    "contents": [
+                        { "kind": "block", "type": "controls_repeat_ext" },
+                        { "kind": "block", "type": "controls_whileUntil" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Operadores",
+                    "colour": "#59C059",  // Verde de Scratch
+                    "contents": [
+                        { "kind": "block", "type": "math_number" },
+                        { "kind": "block", "type": "math_arithmetic" }
+                    ]
+                },
+                {
+                    "kind": "category",
+                    "name": "Texto",
+                    "colour": "#9966FF",  // Morado de Scratch
+                    "contents": [
+                        { "kind": "block", "type": "text" },
+                        { "kind": "block", "type": "text_print" }
+                    ]
+                }
+            ]
+        };
+
+        // 2. Inyectar la interfaz activando el renderizador 'g挑戰' (moderno/redondeado) y tema de alto contraste
+        const workspace = Blockly.inject('blocklyArea', {
+            toolbox: toolbox,
+            scrollbars: true,
+            trashcan: true,
+            // 'g挑戰' u 'orcas' aplican esquinas curvas y padding interno idénticos a Scratch
+            renderer: 'zelos', 
+            theme: 'modern',
+            grid: {
+                spacing: 25,
+                length: 0, // Sin puntos de fondo para una estética limpia como Scratch
+                colour: '#fff',
+                snap: true
+            },
+            zoom: {
+                controls: true,
+                wheel: true,
+                startScale: 1.1, // Bloques ligeramente más grandes por defecto
+                maxScale: 3,
+                minScale: 0.3,
+                scaleSpeed: 1.2
+            }
+        });
+
+        // 3. Capturador dinámico de código
+        workspace.addChangeListener(() => {
+            const code = javascript.javascriptGenerator.workspaceToCode(workspace);
+            document.getElementById('codeOutput').innerText = code || "// Inserta bloques en el panel para ver el código resultante...";
+        });
+    </script>
+</body>
+</html>

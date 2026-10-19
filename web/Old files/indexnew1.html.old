@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Code scratch editor</title>
+
+    <link
+        rel="stylesheet"
+        href="../assets/style/style.css"
+    >
+</head>
+
+<body>
+
+    <!-- =====================================================
+         TOPBAR
+         ===================================================== -->
+
+    <nav class="topbar">
+
+        <input
+            type="text"
+            class="projectName"
+            value="Code scratch editor"
+            aria-label="Project name"
+        >
+
+        <button
+            type="button"
+            id="addLanguageButton"
+        >
+            + Language
+        </button>
+
+        <button
+            type="button"
+            id="addCategoryButton"
+        >
+            + Category
+        </button>
+
+        <button
+            type="button"
+            id="addBlockButton"
+        >
+            + Block
+        </button>
+
+        <select
+            id="languageSelect"
+            class="type"
+            aria-label="Select language"
+        ></select>
+
+    </nav>
+
+
+    <!-- =====================================================
+         MAIN
+         ===================================================== -->
+
+    <main class="main">
+
+        <!-- =================================================
+             PALETTE
+             ================================================= -->
+
+        <aside class="palette">
+
+            <div class="paletteTitle">
+                Blocks
+            </div>
+
+            <div
+                class="categories"
+                id="categories"
+            ></div>
+
+        </aside>
+
+
+        <!-- =================================================
+             EDITOR
+             ================================================= -->
+
+        <section class="editor">
+
+            <div class="workspaceToolbar">
+
+                <button
+                    type="button"
+                    id="clearWorkspaceButton"
+                >
+                    Clear
+                </button>
+
+                <button
+                    type="button"
+                    id="deleteBlockButton"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+
+            <div
+                class="workspace"
+                id="workspace"
+            >
+
+                <div
+                    class="workspaceEmpty"
+                    id="workspaceEmpty"
+                >
+                    Drag blocks here
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CODE PANEL
+             ================================================= -->
+
+        <aside class="codePanel">
+
+            <div class="codeHeader">
+
+                <span>
+                    Generated code
+                </span>
+
+                <button
+                    type="button"
+                    id="copyCodeButton"
+                >
+                    Copy
+                </button>
+
+            </div>
+
+
+            <pre
+                id="codeOutput"
+            ></pre>
+
+
+            <div
+                class="previewContainer"
+                id="previewContainer"
+            >
+
+                <div class="previewHeader">
+                    HTML Preview
+                </div>
+
+                <iframe
+                    id="htmlPreview"
+                    title="HTML Preview"
+                    sandbox="allow-scripts"
+                ></iframe>
+
+            </div>
+
+        </aside>
+
+    </main>
+
+
+    <!-- =====================================================
+         LANGUAGE MODAL
+         ===================================================== -->
+
+    <div
+        class="modal hidden"
+        id="languageModal"
+    >
+
+        <div class="modalContent">
+
+            <h2>
+                Add language
+            </h2>
+
+            <label>
+                Internal ID
+
+                <input
+                    type="text"
+                    id="languageId"
+                    placeholder="python"
+                >
+            </label>
+
+            <label>
+                Display name
+
+                <input
+                    type="text"
+                    id="languageName"
+                    placeholder="Python"
+                >
+            </label>
+
+            <div class="modalButtons">
+
+                <button
+                    type="button"
+                    data-close-modal="languageModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="saveLanguageButton"
+                >
+                    Create
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CATEGORY MODAL
+         ===================================================== -->
+
+    <div
+        class="modal hidden"
+        id="categoryModal"
+    >
+
+        <div class="modalContent">
+
+            <h2>
+                Add category
+            </h2>
+
+            <label>
+                Internal ID
+
+                <input
+                    type="text"
+                    id="categoryId"
+                    placeholder="functions"
+                >
+            </label>
+
+            <label>
+                Display name
+
+                <input
+                    type="text"
+                    id="categoryName"
+                    placeholder="Functions"
+                >
+            </label>
+
+            <label>
+                Color
+
+                <input
+                    type="text"
+                    id="categoryColor"
+                    placeholder="#fc7703"
+                    value="#fc7703"
+                >
+            </label>
+
+            <div class="modalButtons">
+
+                <button
+                    type="button"
+                    data-close-modal="categoryModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="saveCategoryButton"
+                >
+                    Create
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         BLOCK MODAL
+         ===================================================== -->
+
+    <div
+        class="modal hidden"
+        id="blockModal"
+    >
+
+        <div class="modalContent large">
+
+            <h2>
+                Add internal block
+            </h2>
+
+
+            <label>
+                Block ID
+
+                <input
+                    type="text"
+                    id="blockId"
+                    placeholder="myBlock"
+                >
+            </label>
+
+
+            <label>
+                Display name
+
+                <input
+                    type="text"
+                    id="blockName"
+                    placeholder="My block"
+                >
+            </label>
+
+
+            <label>
+                Data action
+
+                <input
+                    type="text"
+                    id="blockAction"
+                    placeholder="console.log({dropdown1});"
+                >
+            </label>
+
+
+            <label>
+                `data-src`
+
+                <textarea
+                    id="blockDataSrc"
+                    rows="8"
+                    placeholder="<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; ...></svg>"
+                ></textarea>
+            </label>
+
+
+            <label>
+                Dropdown count
+
+                <input
+                    type="number"
+                    id="blockDropdownCount"
+                    min="0"
+                    value="0"
+                >
+            </label>
+
+
+            <div id="dropdownEditor"></div>
+
+
+            <label class="checkbox">
+
+                <input
+                    type="checkbox"
+                    id="blockIsC"
+                >
+
+                C block
+
+            </label>
+
+
+            <div class="modalButtons">
+
+                <button
+                    type="button"
+                    data-close-modal="blockModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="saveBlockButton"
+                >
+                    Create
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SCRIPT
+         ===================================================== -->
+
+    <script
+        src="../assets/script/script.js"
+    ></script>
+
+</body>
+</html>

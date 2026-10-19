@@ -1,0 +1,886 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #202020;
+    color: white;
+    font-family: Calibri, Arial, sans-serif;
+    overflow: hidden;
+}
+
+
+/* =========================
+   TOPBAR
+   ========================= */
+
+.topbar {
+    height: 48px;
+    width: 100%;
+
+    background: #acc6df;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 10px;
+
+    color: #111;
+
+    border-bottom: 1px solid #777;
+}
+
+.topbarLeft {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    width: 100%;
+}
+
+.topbar label {
+    font-weight: bold;
+}
+
+.topbar select,
+.topbar button {
+    height: 30px;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eeeeee;
+    color: #111;
+
+    font-family: Calibri, Arial, sans-serif;
+}
+
+.topbar select {
+    min-width: 120px;
+    padding: 2px 7px;
+}
+
+.topbar button {
+    padding: 0 10px;
+    cursor: pointer;
+}
+
+.topbar button:hover {
+    background: #ffffff;
+}
+
+.topbar button:active {
+    background: #d6d6d6;
+}
+
+
+/* =========================
+   MAIN
+   ========================= */
+
+.main {
+    width: 100%;
+    height: calc(100vh - 48px);
+
+    display: grid;
+
+    grid-template-columns:
+        270px
+        minmax(300px, 1fr)
+        430px;
+}
+
+
+/* =========================
+   PALETTE
+   ========================= */
+
+.palette {
+    min-width: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    background: #292929;
+
+    border-right: 1px solid #111;
+}
+
+.paletteTitle {
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 12px;
+
+    background: #252525;
+
+    border-bottom: 1px solid #111;
+
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.category {
+    margin: 8px;
+}
+
+.categoryHeader {
+    min-height: 36px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 10px;
+
+    color: white;
+
+    border: 1px solid #111;
+    border-radius: 3px 3px 0 0;
+
+    font-weight: bold;
+}
+
+.categoryBlocks {
+    padding: 6px;
+
+    background: #222;
+
+    border: 1px solid #111;
+    border-top: none;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+.paletteBlock {
+    width: 100%;
+    min-height: 40px;
+
+    position: relative;
+
+    cursor: grab;
+
+    user-select: none;
+
+    border: 0;
+}
+
+.paletteBlock:active {
+    cursor: grabbing;
+}
+
+.paletteBlock:hover {
+    filter: brightness(1.1);
+}
+
+.paletteBlock svg,
+.paletteBlock img {
+    width: 100%;
+    height: auto;
+
+    max-width: 260px;
+
+    display: block;
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   EDITOR
+   ========================= */
+
+.editor {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #202020;
+}
+
+.workspaceToolbar {
+    height: 40px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 0 8px;
+
+    background: #292929;
+
+    border-bottom: 1px solid #111;
+
+    color: #ddd;
+}
+
+.workspaceToolbar span {
+    flex: 1;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workspaceToolbar button {
+    height: 28px;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eeeeee;
+    color: #111;
+
+    cursor: pointer;
+}
+
+.workspaceToolbar button:hover {
+    background: white;
+}
+
+
+/* =========================
+   WORKSPACE
+   ========================= */
+
+.workspace {
+    position: relative;
+
+    flex: 1;
+
+    overflow: auto;
+
+    min-height: 0;
+
+    background-color: #202020;
+
+    background-image:
+        radial-gradient(#555 1px, transparent 1px);
+
+    background-size: 16px 16px;
+
+    background-position: 0 0;
+}
+
+.workspace.dragOver {
+    background-color: #262626;
+}
+
+.workspaceEmpty {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    color: #777;
+
+    pointer-events: none;
+
+    text-align: center;
+
+    font-size: 16px;
+}
+
+
+/* =========================
+   WORKSPACE BLOCKS
+   ========================= */
+
+.workspaceBlock {
+    position: absolute;
+
+    z-index: 10;
+
+    min-width: 80px;
+
+    cursor: grab;
+
+    user-select: none;
+
+    overflow: visible;
+}
+
+.workspaceBlock.dragging {
+    z-index: 1000;
+
+    cursor: grabbing;
+}
+
+.workspaceBlock.selected {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+.workspaceBlock svg,
+.workspaceBlock img {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    max-width: 420px;
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   DROPDOWNS
+   ========================= */
+
+.blockDropdowns {
+    position: relative;
+
+    z-index: 30;
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    margin-bottom: 4px;
+
+    padding: 3px;
+
+    background: rgba(32, 32, 32, 0.95);
+
+    border: 1px solid #111;
+    border-radius: 3px;
+
+    pointer-events: auto;
+}
+
+.blockDropdown {
+    min-width: 90px;
+    max-width: 180px;
+
+    height: 27px;
+
+    padding: 1px 5px;
+
+    background: #eeeeee;
+    color: #111;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    font-family: Calibri, Arial, sans-serif;
+
+    cursor: pointer;
+
+    pointer-events: auto;
+}
+
+.blockDropdown:focus {
+    outline: 1px solid #acc6df;
+}
+
+
+/* =========================
+   INPUTS
+   ========================= */
+
+.blockInputs {
+    position: relative;
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    margin-bottom: 4px;
+
+    padding: 3px;
+
+    background: rgba(32, 32, 32, 0.95);
+
+    border: 1px solid #111;
+    border-radius: 3px;
+
+    z-index: 30;
+}
+
+.blockInput {
+    min-width: 80px;
+
+    height: 27px;
+
+    padding: 2px 5px;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eeeeee;
+    color: #111;
+
+    font-family: Calibri, Arial, sans-serif;
+}
+
+
+/* =========================
+   C BLOCKS
+   ========================= */
+
+.cSlot {
+    position: relative;
+
+    min-height: 50px;
+
+    margin: 5px 0;
+
+    padding: 5px;
+
+    border: 1px dashed #777;
+
+    background: rgba(255, 255, 255, 0.03);
+
+    z-index: 5;
+}
+
+.cSlot.dragTarget {
+    border-color: white;
+
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cSlot .workspaceBlock {
+    position: relative;
+
+    left: 0 !important;
+    top: 0 !important;
+
+    margin-bottom: 5px;
+}
+
+
+/* =========================
+   CODE PANEL
+   ========================= */
+
+.codePanel {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #181818;
+
+    border-left: 1px solid #111;
+}
+
+.codeHeader {
+    height: 40px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 12px;
+
+    background: #292929;
+
+    border-bottom: 1px solid #111;
+
+    font-size: 17px;
+    font-weight: bold;
+}
+
+#codeOutput {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow: auto;
+
+    margin: 0;
+
+    padding: 12px;
+
+    background: #181818;
+
+    color: #eee;
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    white-space: pre-wrap;
+}
+
+
+/* =========================
+   HTML PREVIEW
+   ========================= */
+
+.previewContainer {
+    height: 270px;
+
+    flex-shrink: 0;
+
+    display: none;
+
+    flex-direction: column;
+
+    background: white;
+
+    border-top: 1px solid #111;
+}
+
+.previewContainer.visible {
+    display: flex;
+}
+
+.previewHeader {
+    height: 34px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 10px;
+
+    background: #292929;
+
+    color: white;
+
+    font-weight: bold;
+}
+
+#htmlPreview {
+    width: 100%;
+    height: 100%;
+
+    border: 0;
+
+    background: white;
+}
+
+
+/* =========================
+   MODALS
+   ========================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 5000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modalContent {
+    width: min(460px, calc(100vw - 30px));
+    max-height: calc(100vh - 30px);
+
+    overflow-y: auto;
+
+    padding: 18px;
+
+    background: #292929;
+
+    border: 1px solid #111;
+
+    border-radius: 4px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.5);
+
+    color: white;
+}
+
+.modalContent.large {
+    width: min(720px, calc(100vw - 30px));
+}
+
+.modalContent h2 {
+    margin: 0 0 15px 0;
+}
+
+.modalContent h3 {
+    margin: 0;
+}
+
+.modalContent label {
+    display: block;
+
+    margin-top: 10px;
+    margin-bottom: 4px;
+
+    font-weight: bold;
+}
+
+.modalContent input,
+.modalContent select,
+.modalContent textarea {
+    width: 100%;
+
+    padding: 7px;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eeeeee;
+    color: #111;
+
+    font-family: Calibri, Arial, sans-serif;
+}
+
+.modalContent textarea {
+    resize: vertical;
+
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
+}
+
+.fieldHelp {
+    margin-top: 3px;
+
+    color: #999;
+
+    font-size: 12px;
+}
+
+.modalButtons {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 18px;
+}
+
+.modalButtons button,
+.inputEditorHeader button {
+    height: 30px;
+
+    padding: 0 12px;
+
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eeeeee;
+    color: #111;
+
+    cursor: pointer;
+}
+
+.modalButtons button:hover,
+.inputEditorHeader button:hover {
+    background: white;
+}
+
+
+/* =========================
+   FORM ROWS
+   ========================= */
+
+.formRow {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 15px;
+}
+
+.checkboxRow {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding-top: 25px;
+}
+
+.checkboxRow input {
+    width: auto;
+}
+
+.checkboxRow label {
+    margin: 0;
+}
+
+
+/* =========================
+   DROPDOWN EDITOR
+   ========================= */
+
+.dropdownEditor {
+    margin-top: 10px;
+}
+
+.dropdownOption {
+    margin-bottom: 10px;
+
+    padding: 8px;
+
+    background: #222;
+
+    border: 1px solid #111;
+
+    border-radius: 3px;
+}
+
+.dropdownTitle {
+    margin-bottom: 5px;
+
+    font-weight: bold;
+
+    color: #ddd;
+}
+
+.dropdownOption textarea {
+    width: 100%;
+
+    min-height: 70px;
+}
+
+
+/* =========================
+   INPUT EDITOR
+   ========================= */
+
+.inputEditorHeader {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.inputRow {
+    display: grid;
+
+    grid-template-columns:
+        120px
+        1fr
+        1fr
+        40px;
+
+    gap: 5px;
+
+    margin-bottom: 6px;
+}
+
+.inputRow button {
+    border: 1px solid #777;
+    border-radius: 3px;
+
+    background: #eee;
+    color: #111;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 1000px) {
+
+    .main {
+        grid-template-columns:
+            220px
+            minmax(300px, 1fr);
+    }
+
+    .codePanel {
+        display: none;
+    }
+
+}
+
+@media (max-width: 700px) {
+
+    .topbar {
+        height: auto;
+        min-height: 48px;
+    }
+
+    .topbarLeft {
+        flex-wrap: wrap;
+
+        padding: 6px 0;
+    }
+
+    .main {
+        height: calc(100vh - 78px);
+
+        grid-template-columns:
+            180px
+            minmax(250px, 1fr);
+    }
+
+}
+/* C-block: los bloques internos forman una columna */
+.cBlockBody {
+    position: relative;
+    min-height: 52px;
+    box-sizing: border-box;
+    padding: 24px 0 8px 24px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    width: 100%;
+    overflow: visible;
+}
+
+.cBlockBody > .workspaceBlock {
+    position: absolute;
+    left: 24px;
+    top: 4px;
+    margin: 0;
+}
+
+.cBlockIndicator {
+    pointer-events: none;
+    user-select: none;
+}
+
+.cBlockDropHint {
+    position: absolute;
+    left: 24px;
+    top: 4px;
+    pointer-events: none;
+}

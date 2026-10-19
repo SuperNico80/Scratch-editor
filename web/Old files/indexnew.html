@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Code scratch editor</title>
+
+    <link rel="stylesheet" href="../assets/style/style.css">
+</head>
+
+<body>
+
+    <nav class="topbar">
+
+        <div class="topbarLeft">
+
+            <label for="languageSelect">Select language</label>
+
+            <select id="languageSelect"></select>
+
+            <button id="addLanguageButton" type="button">
+                + Language
+            </button>
+
+            <button id="addCategoryButton" type="button">
+                + Category
+            </button>
+
+            <button id="addBlockButton" type="button">
+                + Block
+            </button>
+
+            <button id="clearButton" type="button">
+                Clear
+            </button>
+
+            <button id="copyButton" type="button">
+                Copy
+            </button>
+
+            <!--<button id="generateButton" type="button">
+                Generate
+            </button>-->
+
+        </div>
+
+    </nav>
+
+
+    <main class="main">
+
+        <!-- PALETTE -->
+
+        <aside class="palette">
+
+            <div class="paletteTitle">
+                Blocks
+            </div>
+
+            <div id="categories"></div>
+
+        </aside>
+
+
+        <!-- EDITOR -->
+
+        <section class="editor">
+
+            <div class="workspaceToolbar">
+
+                <span id="selectedBlockLabel">
+                    No block selected
+                </span>
+
+                <button id="deleteSelectedButton" type="button">
+                    Delete selected
+                </button>
+
+            </div>
+
+
+            <div
+                class="workspace"
+                id="workspace"
+            >
+
+                <div
+                    class="workspaceEmpty"
+                    id="workspaceEmpty"
+                >
+                    Drag blocks here
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- CODE -->
+
+        <aside class="codePanel">
+
+            <div class="codeHeader">
+                Code
+            </div>
+
+            <pre id="codeOutput"></pre>
+
+
+            <div
+                class="previewContainer"
+                id="previewContainer"
+            >
+
+                <div class="previewHeader">
+                    HTML Preview
+                </div>
+
+                <iframe
+                    id="htmlPreview"
+                    sandbox="allow-scripts"
+                ></iframe>
+
+            </div>
+
+        </aside>
+
+    </main>
+
+
+    <!-- LANGUAGE MODAL -->
+
+    <div
+        class="modal hidden"
+        id="languageModal"
+    >
+
+        <div class="modalContent">
+
+            <h2>
+                Create language
+            </h2>
+
+            <label for="languageId">
+                ID
+            </label>
+
+            <input
+                id="languageId"
+                type="text"
+                placeholder="html"
+            >
+
+            <label for="languageName">
+                Name
+            </label>
+
+            <input
+                id="languageName"
+                type="text"
+                placeholder="HTML"
+            >
+
+            <div class="modalButtons">
+
+                <button
+                    id="saveLanguageButton"
+                    type="button"
+                >
+                    Create
+                </button>
+
+                <button
+                    id="cancelLanguageButton"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CATEGORY MODAL -->
+
+    <div
+        class="modal hidden"
+        id="categoryModal"
+    >
+
+        <div class="modalContent">
+
+            <h2>
+                Create category
+            </h2>
+
+            <label for="categoryLanguage">
+                Language
+            </label>
+
+            <select id="categoryLanguage"></select>
+
+            <label for="categoryId">
+                ID
+            </label>
+
+            <input
+                id="categoryId"
+                type="text"
+                placeholder="functions"
+            >
+
+            <label for="categoryName">
+                Name
+            </label>
+
+            <input
+                id="categoryName"
+                type="text"
+                placeholder="Functions"
+            >
+
+            <label for="categoryColor">
+                Color
+            </label>
+
+            <input
+                id="categoryColor"
+                type="text"
+                value="#fc7703"
+                placeholder="#fc7703"
+            >
+
+            <div class="modalButtons">
+
+                <button
+                    id="saveCategoryButton"
+                    type="button"
+                >
+                    Create
+                </button>
+
+                <button
+                    id="cancelCategoryButton"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- BLOCK MODAL -->
+
+    <div
+        class="modal hidden"
+        id="blockModal"
+    >
+
+        <div class="modalContent large">
+
+            <h2>
+                Create block
+            </h2>
+
+
+            <label for="blockCategory">
+                Category
+            </label>
+
+            <select id="blockCategory"></select>
+
+
+            <label for="blockId">
+                Block ID
+            </label>
+
+            <input
+                id="blockId"
+                type="text"
+                placeholder="myBlock"
+            >
+
+
+            <label for="blockSvgId">
+                SVG file ID
+            </label>
+
+            <input
+                id="blockSvgId"
+                type="text"
+                placeholder="Settypeto"
+            >
+
+            <div class="fieldHelp">
+                The .svg extension is added automatically.
+            </div>
+
+
+            <label for="blockName">
+                Block name
+            </label>
+
+            <input
+                id="blockName"
+                type="text"
+                placeholder="My block"
+            >
+
+
+            <label for="blockAction">
+                Action / code
+            </label>
+
+            <textarea
+                id="blockAction"
+                rows="4"
+                placeholder="<html lang=&quot;{dropdown1}&quot;>"
+            ></textarea>
+
+
+            <div class="formRow">
+
+                <div>
+
+                    <label for="blockDropdownCount">
+                        Dropdown count
+                    </label>
+
+                    <input
+                        id="blockDropdownCount"
+                        type="number"
+                        min="0"
+                        max="20"
+                        value="0"
+                    >
+
+                </div>
+
+                <div class="checkboxRow">
+
+                    <input
+                        id="blockIsC"
+                        type="checkbox"
+                    >
+
+                    <label for="blockIsC">
+                        C block
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="dropdownEditor"
+                class="dropdownEditor"
+            ></div>
+
+
+            <div class="inputEditorHeader">
+
+                <h3>
+                    Inputs
+                </h3>
+
+                <button
+                    id="addInputButton"
+                    type="button"
+                >
+                    + Input
+                </button>
+
+            </div>
+
+
+            <div
+                id="inputEditor"
+                class="inputEditor"
+            ></div>
+
+
+            <label for="blockDataSrc">
+                Internal SVG source (optional)
+            </label>
+
+            <textarea
+                id="blockDataSrc"
+                rows="6"
+                placeholder="<svg ...></svg>"
+            ></textarea>
+
+
+            <div class="fieldHelp">
+                If SVG file ID is empty, data-src can contain the complete SVG.
+            </div>
+
+
+            <div class="modalButtons">
+
+                <button
+                    id="saveBlockButton"
+                    type="button"
+                >
+                    Create
+                </button>
+
+                <button
+                    id="cancelBlockButton"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="../assets/script/script.js"></script>
+
+</body>
+</html>

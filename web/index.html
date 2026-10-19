@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code scratch editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/13.4.0/blockly.min.js" integrity="sha512-pZWw+3ZtKXFhD92teP6ev/VfN+oaCAl1MXF0l+PGXgltv5+XBndGJphd+fL4cqe8gzdvuNLICNdEJvKeESEAzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="../assets/style/style.css">
+    <style>
+        * {
+            font-family: "Segoe UI";
+        }
+        .con, .code {
+            background-color:  #000000;
+            color: #00ff00;
+        }
+        .code {
+            min-height: 130px;
+            width: 80%;
+            margin: 0 auto;
+            overflow: auto;
+        }
+        .res {
+            border: solid #000000 1px;
+            box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.5);
+            margin: 7px;
+            height: 220px;
+        }
+    </style>
+</head>
+<body>
+    <upside class="header"></upside>
+    <div id="blocklyArea"></div>
+    <div class="res">
+        <h2>Generated code</h2>
+        <pre class="code" id="codeOutputBox"></pre>
+    </div>
+    <pre class="con">Baldi's Console Machine</pre>
+    <script src="../assets/script/Console.js"></script>
+    <script src="../assets/script/BlockMaker.js"></script>
+    <script src="../assets/script/ino/Blocks.js"></script>
+    <script src="../assets/script/ino/map.js"></script>
+    <script src="../assets/script/Inject.js"></script>
+    <script src="../assets/script/ino/Extensions/LiquidCrystal.js"></script>
+    <script src="../assets/script/ino/codegenerator.js"></script>
+</body>
+</html>

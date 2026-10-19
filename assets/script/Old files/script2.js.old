@@ -1,0 +1,3052 @@
+"use strict";
+
+/*
+============================================================
+ SCRATCH CODE EDITOR
+============================================================
+
+ Estructura:
+
+ project/
+ ├── web/
+ │   └── index.html
+ └── assets/
+     ├── script/
+     │   └── script.js
+     ├── style/
+     │   └── style.css
+     └── img/
+         └── svg/
+             └── blocks/
+                 ├── html/
+                 │   └── headers/
+                 │       ├── Settypeto.svg
+                 │       ├── Html.svg
+                 │       └── Head.svg
+                 ├── javascript/
+                 │   └── functions/
+                 │       └── Settypeto.svg
+                 └── css/
+
+============================================================
+*/
+
+
+/* =========================================================
+   RUTA DE LOS SVG
+========================================================= */
+
+const SVG_ROOT = "../assets/img/svg/blocks/";
+
+
+/* =========================================================
+   ESTADO
+========================================================= */
+
+const state = {
+
+    language: "html",
+
+    languages: {
+
+        html: {
+
+            id: "html",
+
+            name: "HTML",
+
+            categories: {
+
+                headers: {
+
+                    id: "headers",
+
+                    name: "Headers",
+
+                    color: "#fc7703",
+
+                    blocks: [
+
+                        {
+                            id: "settypeto",
+                            name: "Set type to",
+                            svgId: "Settypeto",
+                            action: "<{dropdown1}>",
+                            dropdownCount: 1,
+                            dropdownOptions: [
+                                {
+                                    dropdown: 1,
+                                    options: [
+                                        {
+                                            name: "doctype",
+                                            action: "!doctype html",
+                                            value: "!doctype html"
+                                        }
+                                    ]
+                                }
+                            ],
+                            isC: false,
+                            dataSrc: null
+                        },
+
+                        {
+                            id: "html",
+                            name: "HTML",
+                            svgId: "Html",
+                            action: '<html lang="{dropdown1}">',
+                            dropdownCount: 1,
+                            dropdownOptions: [
+                                {
+                                    dropdown: 1,
+                                    options: [
+                                        {
+                                            name: "en",
+                                            action: "en",
+                                            value: "en"
+                                        },
+                                        {
+                                            name: "es",
+                                            action: "es",
+                                            value: "es"
+                                        }
+                                    ]
+                                }
+                            ],
+                            isC: true,
+                            dataSrc: null
+                        },
+
+                        {
+                            id: "head",
+                            name: "Head",
+                            svgId: "Head",
+                            action: "<head>",
+                            dropdownCount: 0,
+                            dropdownOptions: [],
+                            isC: true,
+                            dataSrc: null
+                        }
+
+                    ]
+
+                }
+
+            }
+
+        },
+
+
+        javascript: {
+
+            id: "javascript",
+
+            name: "JavaScript",
+
+            categories: {
+
+                functions: {
+
+                    id: "functions",
+
+                    name: "Functions",
+
+                    color: "#fc7703",
+
+                    blocks: [
+
+                        {
+                            id: "settypeto",
+                            name: "Set type to",
+                            svgId: "Settypeto",
+                            action: "settype",
+                            dropdownCount: 0,
+                            dropdownOptions: [],
+                            isC: false,
+                            dataSrc: null
+                        }
+
+                    ]
+
+                }
+
+            }
+
+        },
+
+
+        css: {
+
+            id: "css",
+
+            name: "CSS",
+
+            categories: {}
+
+        }
+
+    },
+
+
+    nextInstance: 1,
+
+    selectedBlock: null,
+
+    drag: null
+
+};
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const languageSelect =
+    document.getElementById("languageSelect");
+
+const categories =
+    document.getElementById("categories");
+
+const workspace =
+    document.getElementById("workspace");
+
+const workspaceEmpty =
+    document.getElementById("workspaceEmpty");
+
+const codeOutput =
+    document.getElementById("codeOutput");
+
+const previewContainer =
+    document.getElementById("previewContainer");
+
+const htmlPreview =
+    document.getElementById("htmlPreview");
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+function cleanId(value) {
+
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9_-]/g, "");
+
+}
+
+
+function getSvgPath(
+    language,
+    category,
+    svgId
+) {
+
+    const file =
+        String(svgId || "")
+            .trim()
+            .replace(/\.svg$/i, "");
+
+    return (
+        SVG_ROOT +
+        encodeURIComponent(language) +
+        "/" +
+        encodeURIComponent(category) +
+        "/" +
+        encodeURIComponent(file) +
+        ".svg"
+    );
+
+}
+
+
+/* =========================================================
+   SVG DESDE data-src
+========================================================= */
+
+function svgFromSource(source) {
+
+    if (!source) {
+        return null;
+    }
+
+    const parser =
+        new DOMParser();
+
+    const parsed =
+        parser.parseFromString(
+            source,
+            "image/svg+xml"
+        );
+
+    const svg =
+        parsed.documentElement;
+
+    if (
+        !svg ||
+        svg.nodeName.toLowerCase() !== "svg"
+    ) {
+
+        return null;
+
+    }
+
+    return document.importNode(
+        svg,
+        true
+    );
+
+}
+
+
+/* =========================================================
+   MODALES
+========================================================= */
+
+function openModal(id) {
+
+    const modal =
+        document.getElementById(id);
+
+    if (modal) {
+
+        modal.classList.remove(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+function closeModal(id) {
+
+    const modal =
+        document.getElementById(id);
+
+    if (modal) {
+
+        modal.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const button =
+            event.target.closest(
+                "[data-close-modal]"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        closeModal(
+            button.dataset.closeModal
+        );
+
+    }
+);
+
+
+document.querySelectorAll(
+    ".modal"
+).forEach(
+    modal => {
+
+        modal.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target === modal
+                ) {
+
+                    modal.classList.add(
+                        "hidden"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+/* =========================================================
+   LENGUAJES
+========================================================= */
+
+function renderLanguages() {
+
+    languageSelect.innerHTML = "";
+
+    Object.values(
+        state.languages
+    ).forEach(
+        language => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                language.id;
+
+            option.textContent =
+                language.name;
+
+            languageSelect.appendChild(
+                option
+            );
+
+        }
+    );
+
+    languageSelect.value =
+        state.language;
+
+}
+
+
+languageSelect.addEventListener(
+    "change",
+    () => {
+
+        state.language =
+            languageSelect.value;
+
+        clearWorkspace();
+
+        renderPalette();
+
+        updateCode();
+
+    }
+);
+
+
+/* =========================================================
+   PALETA
+========================================================= */
+
+function renderPalette() {
+
+    categories.innerHTML = "";
+
+    const language =
+        state.languages[
+            state.language
+        ];
+
+    if (!language) {
+        return;
+    }
+
+
+    Object.values(
+        language.categories
+    ).forEach(
+        category => {
+
+            const categoryElement =
+                document.createElement(
+                    "div"
+                );
+
+            categoryElement.className =
+                "category";
+
+
+            const header =
+                document.createElement(
+                    "div"
+                );
+
+            header.className =
+                "categoryHeader";
+
+
+            const color =
+                document.createElement(
+                    "div"
+                );
+
+            color.className =
+                "color";
+
+            color.style.background =
+                category.color ||
+                "#fc7703";
+
+
+            const name =
+                document.createElement(
+                    "label"
+                );
+
+            name.className =
+                "categoryname";
+
+            name.textContent =
+                category.name;
+
+
+            header.appendChild(
+                color
+            );
+
+            header.appendChild(
+                name
+            );
+
+
+            const blockContainer =
+                document.createElement(
+                    "div"
+                );
+
+            blockContainer.className =
+                "categoryBlocks";
+
+
+            category.blocks.forEach(
+                definition => {
+
+                    const paletteBlock =
+                        createPaletteBlock(
+                            definition,
+                            category
+                        );
+
+                    blockContainer.appendChild(
+                        paletteBlock
+                    );
+
+                }
+            );
+
+
+            categoryElement.appendChild(
+                header
+            );
+
+            categoryElement.appendChild(
+                blockContainer
+            );
+
+            categories.appendChild(
+                categoryElement
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   CREAR BLOQUE DE PALETA
+========================================================= */
+
+function createPaletteBlock(
+    definition,
+    category
+) {
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+    block.className =
+        "paletteBlock";
+
+    block.draggable = true;
+
+
+    block.dataset.blockId =
+        definition.id;
+
+    block.dataset.language =
+        state.language;
+
+    block.dataset.category =
+        category.id;
+
+    block.dataset.action =
+        definition.action || "";
+
+    block.dataset.dropdowncount =
+        String(
+            definition.dropdownCount || 0
+        );
+
+    block.dataset.dropdownoptions =
+        JSON.stringify(
+            definition.dropdownOptions || []
+        );
+
+    block.dataset.isc =
+        definition.isC
+            ? "true"
+            : "false";
+
+
+    if (
+        definition.dataSrc
+    ) {
+
+        block.dataset.src =
+            definition.dataSrc;
+
+    }
+
+
+    /*
+    ----------------------------------------------------------
+    data-src tiene prioridad.
+    ----------------------------------------------------------
+    */
+
+    if (
+        definition.dataSrc
+    ) {
+
+        const svg =
+            svgFromSource(
+                definition.dataSrc
+            );
+
+        if (svg) {
+
+            block.appendChild(
+                svg
+            );
+
+        }
+
+    }
+
+
+    /*
+    ----------------------------------------------------------
+    Si no hay data-src, usamos SVG file ID.
+    ----------------------------------------------------------
+    */
+
+    else if (
+        definition.svgId
+    ) {
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.src =
+            getSvgPath(
+                state.language,
+                category.id,
+                definition.svgId
+            );
+
+        image.draggable =
+            false;
+
+        image.alt =
+            definition.name ||
+            definition.svgId;
+
+        block.appendChild(
+            image
+        );
+
+    }
+
+
+    /*
+    ----------------------------------------------------------
+    Drag & Drop
+    ----------------------------------------------------------
+    */
+
+    block.addEventListener(
+        "dragstart",
+        event => {
+
+            state.drag = {
+
+                definition,
+
+                category
+
+            };
+
+
+            event.dataTransfer.effectAllowed =
+                "copy";
+
+
+            event.dataTransfer.setData(
+                "text/plain",
+                definition.id
+            );
+
+        }
+    );
+
+
+    block.addEventListener(
+        "dragend",
+        () => {
+
+            state.drag =
+                null;
+
+        }
+    );
+
+
+    return block;
+
+}
+
+
+/* =========================================================
+   DROP EN WORKSPACE
+========================================================= */
+
+workspace.addEventListener(
+    "dragover",
+    event => {
+
+        event.preventDefault();
+
+        event.dataTransfer.dropEffect =
+            "copy";
+
+    }
+);
+
+
+workspace.addEventListener(
+    "drop",
+    event => {
+
+        event.preventDefault();
+
+
+        if (!state.drag) {
+            return;
+        }
+
+
+        const rect =
+            workspace.getBoundingClientRect();
+
+
+        const x =
+            event.clientX -
+            rect.left +
+            workspace.scrollLeft;
+
+
+        const y =
+            event.clientY -
+            rect.top +
+            workspace.scrollTop;
+
+
+        createWorkspaceBlock(
+            state.drag.definition,
+            state.drag.category,
+            x,
+            y
+        );
+
+
+        state.drag =
+            null;
+
+    }
+);
+
+
+/* =========================================================
+   CREAR BLOQUE EN WORKSPACE
+========================================================= */
+
+function createWorkspaceBlock(
+    definition,
+    category,
+    x,
+    y
+) {
+
+    const block =
+        document.createElement(
+            "div"
+        );
+
+    block.className =
+        "workspaceBlock";
+
+
+    block.dataset.instance =
+        String(
+            state.nextInstance++
+        );
+
+
+    block.dataset.blockId =
+        definition.id;
+
+    block.dataset.language =
+        state.language;
+
+    block.dataset.category =
+        category.id;
+
+    block.dataset.action =
+        definition.action || "";
+
+    block.dataset.dropdowncount =
+        String(
+            definition.dropdownCount || 0
+        );
+
+    block.dataset.dropdownoptions =
+        JSON.stringify(
+            definition.dropdownOptions || []
+        );
+
+    block.dataset.isc =
+        definition.isC
+            ? "true"
+            : "false";
+
+
+    if (
+        definition.dataSrc
+    ) {
+
+        block.dataset.src =
+            definition.dataSrc;
+
+    }
+
+
+    block.style.left =
+        `${Math.max(0, x)}px`;
+
+    block.style.top =
+        `${Math.max(0, y)}px`;
+
+
+    /*
+    ----------------------------------------------------------
+    SVG
+    ----------------------------------------------------------
+    */
+
+    if (
+        definition.dataSrc
+    ) {
+
+        const svg =
+            svgFromSource(
+                definition.dataSrc
+            );
+
+        if (svg) {
+
+            block.appendChild(
+                svg
+            );
+
+        }
+
+    }
+
+    else if (
+        definition.svgId
+    ) {
+
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.src =
+            getSvgPath(
+                state.language,
+                category.id,
+                definition.svgId
+            );
+
+        image.draggable =
+            false;
+
+        image.alt =
+            definition.name ||
+            definition.svgId;
+
+        block.appendChild(
+            image
+        );
+
+    }
+
+
+    /*
+    ----------------------------------------------------------
+    Dropdowns
+    ----------------------------------------------------------
+    */
+
+    createDropdowns(
+        block,
+        definition
+    );
+
+
+    /*
+    ----------------------------------------------------------
+    C block
+    ----------------------------------------------------------
+    */
+
+    if (
+        definition.isC
+    ) {
+
+        createCSlot(
+            block
+        );
+
+    }
+
+
+    /*
+    ----------------------------------------------------------
+    Selección
+    ----------------------------------------------------------
+    */
+
+    block.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            selectBlock(
+                block
+            );
+
+        }
+    );
+
+
+    /*
+    ----------------------------------------------------------
+    Movimiento
+    ----------------------------------------------------------
+    */
+
+    block.addEventListener(
+        "pointerdown",
+        event => {
+
+            if (
+                event.target.closest(
+                    ".dropdownControl"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            selectBlock(
+                block
+            );
+
+
+            moveBlock(
+                block,
+                event
+            );
+
+        }
+    );
+
+
+    workspace.appendChild(
+        block
+    );
+
+
+    updateEmpty();
+
+    updateCode();
+
+
+    return block;
+
+}
+
+
+/* =========================================================
+   DROPDOWNS
+========================================================= */
+
+function createDropdowns(
+    block,
+    definition
+) {
+
+    const count =
+        Number(
+            definition.dropdownCount || 0
+        );
+
+
+    if (
+        count <= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const data =
+        Array.isArray(
+            definition.dropdownOptions
+        )
+            ? definition.dropdownOptions
+            : [];
+
+
+    const controls =
+        document.createElement(
+            "div"
+        );
+
+    controls.className =
+        "dropdownControls";
+
+
+    for (
+        let i = 1;
+        i <= count;
+        i++
+    ) {
+
+        const dropdownData =
+            data.find(
+                item =>
+                    Number(
+                        item.dropdown
+                    ) === i
+            );
+
+
+        if (
+            !dropdownData ||
+            !Array.isArray(
+                dropdownData.options
+            )
+        ) {
+
+            continue;
+
+        }
+
+
+        const select =
+            document.createElement(
+                "select"
+            );
+
+        select.className =
+            "dropdownControl";
+
+        select.dataset.dropdown =
+            String(i);
+
+
+        dropdownData.options.forEach(
+            optionData => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                const name =
+                    optionData.name ??
+                    optionData.value ??
+                    optionData.action ??
+                    "";
+
+
+                const action =
+                    optionData.action ??
+                    optionData.value ??
+                    name;
+
+
+                const value =
+                    optionData.value ??
+                    action ??
+                    name;
+
+
+                option.textContent =
+                    name;
+
+                option.value =
+                    value;
+
+
+                option.dataset.name =
+                    name;
+
+                option.dataset.action =
+                    action;
+
+                option.dataset.value =
+                    value;
+
+
+                select.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        select.addEventListener(
+            "change",
+            updateCode
+        );
+
+
+        controls.appendChild(
+            select
+        );
+
+    }
+
+
+    if (
+        controls.children.length
+    ) {
+
+        block.appendChild(
+            controls
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   C-SLOT
+========================================================= */
+
+function createCSlot(
+    block
+) {
+
+    const slot =
+        document.createElement(
+            "div"
+        );
+
+    slot.className =
+        "cSlot";
+
+
+    const text =
+        document.createElement(
+            "div"
+        );
+
+    text.className =
+        "cSlotEmpty";
+
+    text.textContent =
+        "Drop blocks here";
+
+
+    slot.appendChild(
+        text
+    );
+
+
+    slot.addEventListener(
+        "dragover",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+        }
+    );
+
+
+    slot.addEventListener(
+        "drop",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            if (!state.drag) {
+                return;
+            }
+
+
+            const child =
+                createWorkspaceBlock(
+                    state.drag.definition,
+                    state.drag.category,
+                    0,
+                    0
+                );
+
+
+            slot.appendChild(
+                child
+            );
+
+
+            child.style.position =
+                "relative";
+
+            child.style.left =
+                "0px";
+
+            child.style.top =
+                "0px";
+
+
+            state.drag =
+                null;
+
+
+            updateSlot(
+                slot
+            );
+
+            updateCode();
+
+        }
+    );
+
+
+    block.appendChild(
+        slot
+    );
+
+}
+
+
+function updateSlot(
+    slot
+) {
+
+    const empty =
+        slot.querySelector(
+            ".cSlotEmpty"
+        );
+
+
+    const block =
+        slot.querySelector(
+            ":scope > .workspaceBlock"
+        );
+
+
+    if (empty) {
+
+        empty.style.display =
+            block
+                ? "none"
+                : "";
+
+    }
+
+}
+
+
+/* =========================================================
+   MOVER BLOQUE
+========================================================= */
+
+function moveBlock(
+    block,
+    event
+) {
+
+    const workspaceRect =
+        workspace.getBoundingClientRect();
+
+
+    const oldLeft =
+        parseFloat(
+            block.style.left
+        ) || 0;
+
+
+    const oldTop =
+        parseFloat(
+            block.style.top
+        ) || 0;
+
+
+    const offsetX =
+        event.clientX -
+        workspaceRect.left -
+        oldLeft;
+
+
+    const offsetY =
+        event.clientY -
+        workspaceRect.top -
+        oldTop;
+
+
+    block.setPointerCapture(
+        event.pointerId
+    );
+
+
+    function move(
+        moveEvent
+    ) {
+
+        /*
+        Los bloques que están dentro de C-slot
+        permanecen relativos.
+        */
+
+        if (
+            block.parentElement &&
+            block.parentElement.classList.contains(
+                "cSlot"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const x =
+            moveEvent.clientX -
+            workspaceRect.left -
+            offsetX +
+            workspace.scrollLeft;
+
+
+        const y =
+            moveEvent.clientY -
+            workspaceRect.top -
+            offsetY +
+            workspace.scrollTop;
+
+
+        block.style.left =
+            `${Math.max(0, x)}px`;
+
+        block.style.top =
+            `${Math.max(0, y)}px`;
+
+
+        updateCode();
+
+    }
+
+
+    function up(
+        upEvent
+    ) {
+
+        try {
+
+            block.releasePointerCapture(
+                upEvent.pointerId
+            );
+
+        } catch (_) {}
+
+
+        block.removeEventListener(
+            "pointermove",
+            move
+        );
+
+        block.removeEventListener(
+            "pointerup",
+            up
+        );
+
+
+        attachToSlot(
+            block
+        );
+
+
+        updateCode();
+
+    }
+
+
+    block.addEventListener(
+        "pointermove",
+        move
+    );
+
+    block.addEventListener(
+        "pointerup",
+        up
+    );
+
+}
+
+
+/* =========================================================
+   ADJUNTAR A C-SLOT
+========================================================= */
+
+function attachToSlot(
+    block
+) {
+
+    if (
+        block.parentElement &&
+        block.parentElement.classList.contains(
+            "cSlot"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const blockRect =
+        block.getBoundingClientRect();
+
+
+    const centerX =
+        blockRect.left +
+        blockRect.width / 2;
+
+
+    const centerY =
+        blockRect.top +
+        blockRect.height / 2;
+
+
+    const slots =
+        workspace.querySelectorAll(
+            ".cSlot"
+        );
+
+
+    for (
+        const slot of slots
+    ) {
+
+        const rect =
+            slot.getBoundingClientRect();
+
+
+        if (
+            centerX >= rect.left &&
+            centerX <= rect.right &&
+            centerY >= rect.top &&
+            centerY <= rect.bottom
+        ) {
+
+            slot.appendChild(
+                block
+            );
+
+
+            block.style.position =
+                "relative";
+
+            block.style.left =
+                "0px";
+
+            block.style.top =
+                "0px";
+
+
+            updateSlot(
+                slot
+            );
+
+
+            return;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   SELECCIONAR
+========================================================= */
+
+function selectBlock(
+    block
+) {
+
+    workspace
+        .querySelectorAll(
+            ".workspaceBlock.selected"
+        )
+        .forEach(
+            selected => {
+
+                selected.classList.remove(
+                    "selected"
+                );
+
+            }
+        );
+
+
+    block.classList.add(
+        "selected"
+    );
+
+
+    state.selectedBlock =
+        block;
+
+}
+
+
+workspace.addEventListener(
+    "click",
+    () => {
+
+        workspace
+            .querySelectorAll(
+                ".workspaceBlock.selected"
+            )
+            .forEach(
+                block => {
+
+                    block.classList.remove(
+                        "selected"
+                    );
+
+                }
+            );
+
+
+        state.selectedBlock =
+            null;
+
+    }
+);
+
+
+/* =========================================================
+   ELIMINAR
+========================================================= */
+
+function deleteSelected() {
+
+    const block =
+        state.selectedBlock;
+
+
+    if (!block) {
+        return;
+    }
+
+
+    const parent =
+        block.parentElement;
+
+
+    block.remove();
+
+
+    state.selectedBlock =
+        null;
+
+
+    if (
+        parent &&
+        parent.classList.contains(
+            "cSlot"
+        )
+    ) {
+
+        updateSlot(
+            parent
+        );
+
+    }
+
+
+    updateEmpty();
+
+    updateCode();
+
+}
+
+
+document
+    .getElementById(
+        "deleteBlockButton"
+    )
+    .addEventListener(
+        "click",
+        deleteSelected
+    );
+
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Delete"
+        ) {
+
+            deleteSelected();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   LIMPIAR WORKSPACE
+========================================================= */
+
+function clearWorkspace() {
+
+    workspace
+        .querySelectorAll(
+            ":scope > .workspaceBlock"
+        )
+        .forEach(
+            block => {
+
+                block.remove();
+
+            }
+        );
+
+
+    state.selectedBlock =
+        null;
+
+
+    updateEmpty();
+
+    updateCode();
+
+}
+
+
+document
+    .getElementById(
+        "clearWorkspaceButton"
+    )
+    .addEventListener(
+        "click",
+        clearWorkspace
+    );
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+function updateEmpty() {
+
+    const blocks =
+        workspace.querySelectorAll(
+            ":scope > .workspaceBlock"
+        );
+
+
+    workspaceEmpty.style.display =
+        blocks.length
+            ? "none"
+            : "";
+
+}
+
+
+/* =========================================================
+   DATOS DE DROPDOWN
+========================================================= */
+
+function getDropdown(
+    block,
+    number
+) {
+
+    const select =
+        block.querySelector(
+            `.dropdownControl[data-dropdown="${number}"]`
+        );
+
+
+    if (!select) {
+
+        return {
+
+            name: "",
+            action: "",
+            value: ""
+
+        };
+
+    }
+
+
+    const option =
+        select.options[
+            select.selectedIndex
+        ];
+
+
+    if (!option) {
+
+        return {
+
+            name: select.value,
+            action: select.value,
+            value: select.value
+
+        };
+
+    }
+
+
+    return {
+
+        name:
+            option.dataset.name ||
+            option.textContent,
+
+        action:
+            option.dataset.action ||
+            option.value,
+
+        value:
+            option.dataset.value ||
+            option.value
+
+    };
+
+}
+
+
+/* =========================================================
+   REEMPLAZAR DROPDOWNS
+========================================================= */
+
+function replaceDropdowns(
+    text,
+    block
+) {
+
+    let result =
+        text || "";
+
+
+    const count =
+        Number(
+            block.dataset.dropdowncount ||
+            0
+        );
+
+
+    for (
+        let i = 1;
+        i <= count;
+        i++
+    ) {
+
+        const data =
+            getDropdown(
+                block,
+                i
+            );
+
+
+        result =
+            result.replaceAll(
+                `{dropdown${i}}`,
+                data.value
+            );
+
+
+        result =
+            result.replaceAll(
+                `{dropdown${i}.name}`,
+                data.name
+            );
+
+
+        result =
+            result.replaceAll(
+                `{dropdown${i}.action}`,
+                data.action
+            );
+
+
+        result =
+            result.replaceAll(
+                `{dropdown${i}.value}`,
+                data.value
+            );
+
+    }
+
+
+    return result;
+
+}
+
+
+/* =========================================================
+   CIERRE HTML
+========================================================= */
+
+function closingTag(
+    action
+) {
+
+    const match =
+        String(action || "")
+            .match(
+                /^<([A-Za-z][\w:-]*)\b[^>]*>$/
+            );
+
+
+    if (!match) {
+        return "";
+    }
+
+
+    const tag =
+        match[1];
+
+
+    const voidTags = [
+
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr"
+
+    ];
+
+
+    if (
+        voidTags.includes(
+            tag.toLowerCase()
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    return `</${tag}>`;
+
+}
+
+
+/* =========================================================
+   GENERAR BLOQUE
+========================================================= */
+
+function generateBlock(
+    block,
+    level
+) {
+
+    const indent =
+        "    ".repeat(
+            level
+        );
+
+
+    let action =
+        block.dataset.action || "";
+
+
+    action =
+        replaceDropdowns(
+            action,
+            block
+        );
+
+
+    if (!action) {
+        return "";
+    }
+
+
+    let code =
+        indent +
+        action;
+
+
+    if (
+        block.dataset.isc ===
+        "true"
+    ) {
+
+        const slot =
+            block.querySelector(
+                ":scope > .cSlot"
+            );
+
+
+        if (slot) {
+
+            const children =
+                Array.from(
+                    slot.children
+                )
+                .filter(
+                    element =>
+                        element.classList.contains(
+                            "workspaceBlock"
+                        )
+                );
+
+
+            for (
+                const child of children
+            ) {
+
+                const childCode =
+                    generateBlock(
+                        child,
+                        level + 1
+                    );
+
+
+                if (childCode) {
+
+                    code +=
+                        "\n" +
+                        childCode;
+
+                }
+
+            }
+
+        }
+
+
+        const closing =
+            closingTag(
+                action
+            );
+
+
+        if (closing) {
+
+            code +=
+                "\n" +
+                indent +
+                closing;
+
+        }
+
+    }
+
+
+    return code;
+
+}
+
+
+/* =========================================================
+   GENERAR TODO EL CÓDIGO
+========================================================= */
+
+function generateCode() {
+
+    const blocks =
+        Array.from(
+            workspace.children
+        )
+        .filter(
+            element =>
+                element.classList.contains(
+                    "workspaceBlock"
+                )
+        )
+        .sort(
+            (a, b) => {
+
+                const topA =
+                    parseFloat(
+                        a.style.top
+                    ) || 0;
+
+
+                const topB =
+                    parseFloat(
+                        b.style.top
+                    ) || 0;
+
+
+                return topA - topB;
+
+            }
+        );
+
+
+    return blocks
+        .map(
+            block =>
+                generateBlock(
+                    block,
+                    0
+                )
+        )
+        .filter(
+            code => code
+        )
+        .join("\n\n");
+
+}
+
+
+/* =========================================================
+   ACTUALIZAR CÓDIGO
+========================================================= */
+
+function updateCode() {
+
+    const code =
+        generateCode();
+
+
+    codeOutput.textContent =
+        code;
+
+
+    /*
+    ----------------------------------------------------------
+    Preview HTML
+    ----------------------------------------------------------
+    */
+
+    if (
+        state.language === "html"
+    ) {
+
+        previewContainer.style.display =
+            "flex";
+
+
+        htmlPreview.srcdoc =
+            code ||
+            "<!doctype html><html><body></body></html>";
+
+    }
+
+    else {
+
+        previewContainer.style.display =
+            "none";
+
+    }
+
+}
+
+
+/* =========================================================
+   COPIAR
+========================================================= */
+
+document
+    .getElementById(
+        "copyCodeButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            const code =
+                codeOutput.textContent ||
+                "";
+
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    code
+                );
+
+            }
+
+            catch (_) {
+
+                const textarea =
+                    document.createElement(
+                        "textarea"
+                    );
+
+                textarea.value =
+                    code;
+
+                document.body.appendChild(
+                    textarea
+                );
+
+                textarea.select();
+
+                document.execCommand(
+                    "copy"
+                );
+
+                textarea.remove();
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+   DROPDOWN EDITOR DEL MODAL
+========================================================= */
+
+const dropdownCountInput =
+    document.getElementById(
+        "blockDropdownCount"
+    );
+
+const dropdownEditor =
+    document.getElementById(
+        "dropdownEditor"
+    );
+
+
+function renderDropdownEditor() {
+
+    dropdownEditor.innerHTML = "";
+
+
+    const count =
+        Math.max(
+            0,
+            Number(
+                dropdownCountInput.value
+            ) || 0
+        );
+
+
+    for (
+        let i = 1;
+        i <= count;
+        i++
+    ) {
+
+        const container =
+            document.createElement(
+                "div"
+            );
+
+        container.className =
+            "dropdownEditor";
+
+
+        const title =
+            document.createElement(
+                "div"
+            );
+
+        title.className =
+            "dropdownTitle";
+
+        title.textContent =
+            `Dropdown ${i}`;
+
+
+        const textarea =
+            document.createElement(
+                "textarea"
+            );
+
+        textarea.rows =
+            4;
+
+        textarea.dataset.dropdown =
+            String(i);
+
+        textarea.placeholder =
+            "const|let|var";
+
+
+        if (
+            i === 1
+        ) {
+
+            textarea.value =
+                "const|let|var";
+
+        }
+
+
+        container.appendChild(
+            title
+        );
+
+        container.appendChild(
+            textarea
+        );
+
+
+        dropdownEditor.appendChild(
+            container
+        );
+
+    }
+
+}
+
+
+dropdownCountInput.addEventListener(
+    "input",
+    renderDropdownEditor
+);
+
+
+/* =========================================================
+   LEER DROPDOWNS DEL MODAL
+========================================================= */
+
+function readDropdowns() {
+
+    const result = [];
+
+
+    dropdownEditor
+        .querySelectorAll(
+            "textarea[data-dropdown]"
+        )
+        .forEach(
+            textarea => {
+
+                const number =
+                    Number(
+                        textarea.dataset.dropdown
+                    );
+
+
+                const text =
+                    textarea.value.trim();
+
+
+                if (!text) {
+
+                    result.push({
+
+                        dropdown: number,
+
+                        options: []
+
+                    });
+
+                    return;
+
+                }
+
+
+                /*
+                ------------------------------------------------
+                JSON
+                ------------------------------------------------
+                */
+
+                let options = null;
+
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            text
+                        );
+
+
+                    if (
+                        Array.isArray(
+                            parsed
+                        )
+                    ) {
+
+                        options =
+                            parsed.map(
+                                option => {
+
+                                    if (
+                                        typeof option ===
+                                        "string"
+                                    ) {
+
+                                        return {
+
+                                            name: option,
+
+                                            action: option,
+
+                                            value: option
+
+                                        };
+
+                                    }
+
+
+                                    return {
+
+                                        name:
+                                            option.name ??
+                                            option.action ??
+                                            option.value ??
+                                            "",
+
+                                        action:
+                                            option.action ??
+                                            option.value ??
+                                            option.name ??
+                                            "",
+
+                                        value:
+                                            option.value ??
+                                            option.action ??
+                                            option.name ??
+                                            ""
+
+                                    };
+
+                                }
+                            );
+
+                    }
+
+                }
+
+                catch (_) {}
+
+
+                /*
+                ------------------------------------------------
+                Formato antiguo:
+                const|let|var
+                ------------------------------------------------
+                */
+
+                if (!options) {
+
+                    options =
+                        text
+                            .split("|")
+                            .map(
+                                value =>
+                                    value.trim()
+                            )
+                            .filter(
+                                value =>
+                                    value !== ""
+                            )
+                            .map(
+                                value => ({
+
+                                    name: value,
+
+                                    action: value,
+
+                                    value: value
+
+                                })
+                            );
+
+                }
+
+
+                result.push({
+
+                    dropdown: number,
+
+                    options
+
+                });
+
+            }
+        );
+
+
+    return result;
+
+}
+
+
+/* =========================================================
+   CREAR LENGUAJE
+========================================================= */
+
+document
+    .getElementById(
+        "addLanguageButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "languageId"
+            ).value = "";
+
+
+            document.getElementById(
+                "languageName"
+            ).value = "";
+
+
+            openModal(
+                "languageModal"
+            );
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "saveLanguageButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            const id =
+                cleanId(
+                    document.getElementById(
+                        "languageId"
+                    ).value
+                );
+
+
+            const name =
+                document.getElementById(
+                    "languageName"
+                ).value.trim();
+
+
+            if (!id) {
+
+                alert(
+                    "Internal ID is required."
+                );
+
+                return;
+
+            }
+
+
+            if (!name) {
+
+                alert(
+                    "Display name is required."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                state.languages[id]
+            ) {
+
+                alert(
+                    "That language already exists."
+                );
+
+                return;
+
+            }
+
+
+            state.languages[id] = {
+
+                id,
+
+                name,
+
+                categories: {}
+
+            };
+
+
+            state.language =
+                id;
+
+
+            renderLanguages();
+
+            renderPalette();
+
+            clearWorkspace();
+
+            closeModal(
+                "languageModal"
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   CREAR CATEGORÍA
+========================================================= */
+
+document
+    .getElementById(
+        "addCategoryButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "categoryId"
+            ).value = "";
+
+
+            document.getElementById(
+                "categoryName"
+            ).value = "";
+
+
+            document.getElementById(
+                "categoryColor"
+            ).value =
+                "#fc7703";
+
+
+            openModal(
+                "categoryModal"
+            );
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "saveCategoryButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            const id =
+                cleanId(
+                    document.getElementById(
+                        "categoryId"
+                    ).value
+                );
+
+
+            const name =
+                document.getElementById(
+                    "categoryName"
+                ).value.trim();
+
+
+            const color =
+                document.getElementById(
+                    "categoryColor"
+                ).value.trim() ||
+                "#fc7703";
+
+
+            if (!id) {
+
+                alert(
+                    "Internal ID is required."
+                );
+
+                return;
+
+            }
+
+
+            if (!name) {
+
+                alert(
+                    "Display name is required."
+                );
+
+                return;
+
+            }
+
+
+            const language =
+                state.languages[
+                    state.language
+                ];
+
+
+            if (
+                language.categories[id]
+            ) {
+
+                alert(
+                    "That category already exists."
+                );
+
+                return;
+
+            }
+
+
+            language.categories[id] = {
+
+                id,
+
+                name,
+
+                color,
+
+                blocks: []
+
+            };
+
+
+            renderPalette();
+
+            closeModal(
+                "categoryModal"
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   CREAR BLOQUE
+========================================================= */
+
+document
+    .getElementById(
+        "addBlockButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "blockId"
+            ).value = "";
+
+
+            document.getElementById(
+                "blockSvgId"
+            ).value = "";
+
+
+            document.getElementById(
+                "blockName"
+            ).value = "";
+
+
+            document.getElementById(
+                "blockAction"
+            ).value = "";
+
+
+            document.getElementById(
+                "blockDropdownCount"
+            ).value = "0";
+
+
+            document.getElementById(
+                "blockIsC"
+            ).checked = false;
+
+
+            document.getElementById(
+                "blockDataSrc"
+            ).value = "";
+
+
+            renderDropdownEditor();
+
+
+            openModal(
+                "blockModal"
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   GUARDAR BLOQUE
+========================================================= */
+
+document
+    .getElementById(
+        "saveBlockButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            const blockId =
+                cleanId(
+                    document.getElementById(
+                        "blockId"
+                    ).value
+                );
+
+
+            const svgId =
+                document.getElementById(
+                    "blockSvgId"
+                ).value
+                .trim()
+                .replace(
+                    /\.svg$/i,
+                    ""
+                );
+
+
+            const name =
+                document.getElementById(
+                    "blockName"
+                ).value.trim();
+
+
+            const action =
+                document.getElementById(
+                    "blockAction"
+                ).value.trim();
+
+
+            const dropdownCount =
+                Math.max(
+                    0,
+                    Number(
+                        document.getElementById(
+                            "blockDropdownCount"
+                        ).value
+                    ) || 0
+                );
+
+
+            const isC =
+                document.getElementById(
+                    "blockIsC"
+                ).checked;
+
+
+            const dataSrc =
+                document.getElementById(
+                    "blockDataSrc"
+                ).value.trim();
+
+
+            /*
+            ====================================================
+            IMPORTANTE
+
+            data-src NO ES OBLIGATORIO.
+
+            Puede existir:
+
+                SVG file ID
+
+            o:
+
+                data-src
+
+            o ambos.
+
+            ====================================================
+            */
+
+            if (!blockId) {
+
+                alert(
+                    "Block ID is required."
+                );
+
+                return;
+
+            }
+
+
+            if (!name) {
+
+                alert(
+                    "Display name is required."
+                );
+
+                return;
+
+            }
+
+
+            /*
+            ----------------------------------------------------
+            ESTA ES LA ÚNICA VALIDACIÓN DEL SVG.
+
+            Si ambos están vacíos, no sabemos de dónde
+            obtener el bloque.
+            ----------------------------------------------------
+            */
+
+            if (
+                !svgId &&
+                !dataSrc
+            ) {
+
+                alert(
+                    "Enter an SVG file ID or data-src."
+                );
+
+                return;
+
+            }
+
+
+            /*
+            ----------------------------------------------------
+            Si data-src existe, comprobar que sea SVG válido.
+            ----------------------------------------------------
+            */
+
+            if (dataSrc) {
+
+                const svg =
+                    svgFromSource(
+                        dataSrc
+                    );
+
+
+                if (!svg) {
+
+                    alert(
+                        "data-src must contain valid SVG markup."
+                    );
+
+                    return;
+
+                }
+
+            }
+
+
+            const language =
+                state.languages[
+                    state.language
+                ];
+
+
+            if (!language) {
+                return;
+            }
+
+
+            const categoryIds =
+                Object.keys(
+                    language.categories
+                );
+
+
+            if (
+                categoryIds.length === 0
+            ) {
+
+                alert(
+                    "Create a category first."
+                );
+
+                return;
+
+            }
+
+
+            /*
+            ----------------------------------------------------
+            El bloque se crea en la primera categoría existente,
+            igual que en la versión anterior.
+            ----------------------------------------------------
+            */
+
+            const category =
+                language.categories[
+                    categoryIds[0]
+                ];
+
+
+            const definition = {
+
+                id:
+                    blockId,
+
+                name:
+                    name,
+
+                svgId:
+                    svgId ||
+                    null,
+
+                action:
+                    action,
+
+                dropdownCount:
+                    dropdownCount,
+
+                dropdownOptions:
+                    readDropdowns(),
+
+                isC:
+                    isC,
+
+                dataSrc:
+                    dataSrc ||
+                    null
+
+            };
+
+
+            /*
+            ----------------------------------------------------
+            Si ya existe el mismo ID, se reemplaza.
+            ----------------------------------------------------
+            */
+
+            const existing =
+                category.blocks.findIndex(
+                    block =>
+                        block.id ===
+                        blockId
+                );
+
+
+            if (
+                existing >= 0
+            ) {
+
+                category.blocks[
+                    existing
+                ] = definition;
+
+            }
+
+            else {
+
+                category.blocks.push(
+                    definition
+                );
+
+            }
+
+
+            renderPalette();
+
+            closeModal(
+                "blockModal"
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   INICIALIZACIÓN
+========================================================= */
+
+renderLanguages();
+
+renderPalette();
+
+renderDropdownEditor();
+
+updateEmpty();
+
+updateCode();
+
+
+/* =========================================================
+   API
+========================================================= */
+
+window.ScratchCodeEditor = {
+
+    state,
+
+    renderPalette,
+
+    generateCode,
+
+    updateCode,
+
+    clearWorkspace
+
+};

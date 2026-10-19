@@ -1,0 +1,243 @@
+function setupScratchWorkspace6() {
+  var activeElement = null;
+  var offsetX = 0;
+  var offsetY = 0;
+  var SNAP_DISTANCE = 35;
+
+  var menuContainer = document.querySelector(".blocks");
+  var outputContainer = document.getElementById("code-output");
+  if (!menuContainer) return;
+
+  if (!document.getElementById("scratch-engine-styles")) {
+    var styleSheet = document.createElement("style");
+    styleSheet.id = "scratch-engine-styles";
+    styleSheet.innerText = [
+      "#code-output { white-space: pre-wrap !important; font-family: monospace; }",
+      ".scratch-wrapper { display: flex !important; flex-direction: column !important; align-items: flex-start !important; width: max-content !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }",
+      ".block-core-content { position: relative !important; }",
+      ".c-top-container { position: relative !important; width: 200px; height: 42px; }",
+      ".c-boca, .sub-stack { box-sizing: border-box !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 3px !important; padding: 4px 0 !important; min-width: 100% !important; }",
+      ".c-boca { background-color: #ff920f !important; margin-left: 18px !important; width: 182px !important; min-height: 16px !important; }",
+      ".sub-stack { min-height: 5px !important; background: transparent !important; }",
+      ".inner-svg-block { display: block !important; margin: 0 !important; }",
+      ".sb3-literal-number-dropdown { position: absolute !important; left: 110px !important; top: 10px !important; width: 55px !important; height: 20px !important; opacity: 1 !important; cursor: pointer !important; z-index: 10005 !important; border-radius: 4px; border: 1px solid #ccc; font-size: 11px; }"
+    ].join("\n");
+    document.head.appendChild(styleSheet);
+  }
+
+  function compileWorkspace() {
+    if (!outputContainer) return;
+
+    var lines = [];
+    var rootBlocks = Array.from(document.querySelectorAll(".scratch-wrapper.is-clone"))
+                          .filter(function(block) { return block.parentElement === document.body; });
+
+    rootBlocks.sort(function(a, b) { return parseFloat(a.style.top) - parseFloat(b.style.top); });
+
+    function parseBlock(blockWrapper) {
+      var sourceBlock = blockWrapper.querySelector("[data-action]");
+      if (!sourceBlock) return;
+
+      var action = sourceBlock.dataset.action;
+
+      var dropdown = blockWrapper.querySelector(".sb3-literal-number-dropdown");
+      if (dropdown) {
+        action = action.replace("%VAL%", dropdown.value);
+      }
+
+      if (sourceBlock.classList.contains("c_block")) {
+        lines.push(action);
+
+        var boca = blockWrapper.querySelector(".c-boca");
+        if (boca) {
+          var innerChildren = boca.children;
+          for (var i = 0; i < innerChildren.length; i++) {
+            parseBlock(innerChildren[i]);
+          }
+        }
+
+        // Sistema alternativo estricto: cerramos el bloque C usando su propio data-action invertido o un prefijo plano limpio
+        if (action.indexOf("<") === 0 && action.indexOf(">") === action.length - 1) {
+          var tagRaw = action.substring(1, action.length - 1);
+          var tagClean = tagRaw.split(" ")[0];
+          lines.push("</" + tagClean + ">");
+        } else {
+          lines.push("end_" + action);
+        }
+      } else {
+        lines.push(action);
+      }
+
+      var subStack = blockWrapper.querySelector(".sub-stack");
+      if (subStack) {
+        var stackedChildren = subStack.children;
+        for (var j = 0; j < stackedChildren.length; j++) {
+          parseBlock(stackedChildren[j]);
+        }
+      }
+    }
+
+    rootBlocks.forEach(function(block) { parseBlock(block); });
+    outputContainer.textContent = lines.join("\n");
+  }
+
+  function buildOptionsHTML(element) {
+    var optionsHTML = "";
+    var rawOptions = element.getAttribute("data-listoptions") || element.dataset.listoptions;
+    
+    if (rawOptions) {
+      try {
+        var optionsArray = JSON.parse(rawOptions);
+        optionsArray.forEach(function(opt) {
+          optionsHTML += '<option value="' + opt + '">' + opt + '</option>';
+        });
+      } catch (e) {
+        console.error(e);
+        optionsHTML = '<option value="default">Error</option>';
+      }
+    } else {
+      optionsHTML = '<option value="1">1</option><option value="2">2</option>';
+    }
+    return optionsHTML;
+  }
+
+  function createWorkspaceBlock(originalElement) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "scratch-wrapper is-clone";
+    wrapper.style.position = "absolute";
+    wrapper.style.zIndex = "10000";
+
+    var contentContainer = document.createElement("div");
+    contentContainer.className = "block-core-content";
+    contentContainer.style.display = "flex";
+    contentContainer.style.flexDirection = "column";
+
+    var actionAttr = originalElement.getAttribute("data-action") || "";
+    var listOptionsAttr = originalElement.getAttribute("data-listoptions") || "";
+    var hasDropdown = actionAttr.indexOf("%VAL%") !== -1;
+
+    if (originalElement.classList.contains("c_block")) {
+      var topContainer = document.createElement("div");
+      topContainer.className = "c-top-container";
+      
+      var cleanImg = document.createElement("img");
+      cleanImg.src = originalElement.src;
+      cleanImg.className = "c_block";
+      cleanImg.setAttribute("data-action", actionAttr);
+      if (listOptionsAttr) cleanImg.setAttribute("data-listoptions", listOptionsAttr);
+      cleanImg.style.cssText = "position:absolute; top:0; left:0; width:200px; height:auto;";
+      cleanImg.draggable = false;
+      topContainer.appendChild(cleanImg);
+      
+      if (hasDropdown) {
+        var selectC = document.createElement("select");
+        selectC.className = "sb3-label sb3-literal-number-dropdown";
+        selectC.innerHTML = buildOptionsHTML(originalElement);
+        
+        selectC.addEventListener("pointerdown", function(e) { e.stopPropagation(); });
+        selectC.addEventListener("mousedown", function(e) { e.stopPropagation(); });
+        selectC.addEventListener("change", function() { compileWorkspace(); });
+        topContainer.appendChild(selectC);
+      }
+
+      contentContainer.appendChild(topContainer);
+
+      var boca = document.createElement("div");
+      boca.className = "c-boca";
+      contentContainer.appendChild(boca);
+
+      var bottomContainer = document.createElement("div");
+      bottomContainer.style.cssText = "width:200px; height:26px; overflow:hidden; position:relative;";
+      
+      var bottomImg = document.createElement("img");
+      bottomImg.src = originalElement.src;
+      bottomImg.style.cssText = "position:absolute; bottom:0; left:0; width:200px; height:auto;";
+      bottomImg.draggable = false;
+      bottomContainer.appendChild(bottomImg);
+      contentContainer.appendChild(bottomContainer);
+
+    } else {
+      var cleanImgNormal = document.createElement("img");
+      cleanImgNormal.src = originalElement.src;
+      cleanImgNormal.className = "inner-svg-block";
+      cleanImgNormal.setAttribute("data-action", actionAttr);
+      if (listOptionsAttr) cleanImgNormal.setAttribute("data-listoptions", listOptionsAttr);
+      cleanImgNormal.style.position = "static";
+      cleanImgNormal.draggable = false;
+      contentContainer.appendChild(cleanImgNormal);
+
+      if (hasDropdown) {
+        var selectN = document.createElement("select");
+        selectN.className = "sb3-label sb3-literal-number-dropdown";
+        selectN.innerHTML = buildOptionsHTML(originalElement);
+        
+        selectN.addEventListener("pointerdown", function(e) { e.stopPropagation(); });
+        selectN.addEventListener("mousedown", function(e) { e.stopPropagation(); });
+        selectN.addEventListener("change", function() { compileWorkspace(); });
+        contentContainer.appendChild(selectN);
+      }
+    }
+
+    var subStack = document.createElement("div");
+    subStack.className = "sub-stack";
+
+    wrapper.appendChild(contentContainer);
+    wrapper.appendChild(subStack);
+
+    return wrapper;
+  }
+
+  document.addEventListener("pointerdown", function(e) {
+    if (e.target.classList.contains("sb3-literal-number-dropdown")) return;
+
+    if (menuContainer.contains(e.target)) {
+      if (!e.target.classList.contains("block") && !e.target.classList.contains("c_block")) return;
+      
+      e.target.draggable = false;
+      var rect = e.target.getBoundingClientRect();
+      
+      var clone = createWorkspaceBlock(e.target);
+      clone.style.left = (rect.left + window.scrollX) + "px';";
+      clone.style.top = (rect.top + window.scrollY) + "px';";
+      
+      document.body.appendChild(clone);
+      activeElement = clone;
+    } 
+    else {
+      var wrapper = e.target.closest(".scratch-wrapper");
+      if (!wrapper) return;
+
+      activeElement = wrapper;
+
+      var currentParent = activeElement.parentElement;
+      if (currentParent && currentParent.tagName !== "BODY") {
+        var rectCol = activeElement.getBoundingClientRect();
+        document.body.appendChild(activeElement);
+        activeElement.style.position = "absolute";
+        activeElement.style.left = (rectCol.left + window.scrollX) + "px";
+        activeElement.style.top = (rectCol.top + window.scrollY) + "px";
+        activeElement.style.zIndex = "10000";
+
+        compileWorkspace();
+      }
+    }
+
+    if (activeElement) {
+      var rectAct = activeElement.getBoundingClientRect();
+      offsetX = e.clientX - rectAct.left;
+      offsetY = e.clientY - rectAct.top;
+      activeElement.style.zIndex = "10001";
+      e.preventDefault(); 
+    }
+  });
+
+  document.addEventListener("pointermove", function(e) {
+    if (!activeElement) return;
+    activeElement.style.left = (e.clientX + window.scrollX - offsetX) + "px";
+    activeElement.style.top = (e.clientY + window.scrollY - offsetY) + 'px';
+  });
+
+  document.addEventListener("pointerup", function() {
+    if (!activeElement) return;
+
+activeElement.style.zIndex = "10000";var activeRect = activeElement.getBoundingClientRect();var targets = Array.from(document.querySelectorAll(".c-boca, .sub-stack")).filter(function(zone) { return !activeElement.contains(zone); });var snapped = false;for (var k = 0; k < targets.length; k++) {var zone = targets[k];var zoneRect = zone.getBoundingClientRect();var distX = Math.abs(activeRect.left - zoneRect.left);var distY = Math.abs(activeRect.top - zoneRect.top);if (zone.classList.contains("sub-stack")) {var coreContent = zone.parentElement.querySelector(".block-core-content");if (coreContent) {var coreRect = coreContent.getBoundingClientRect();distY = Math.abs(activeRect.top - coreRect.bottom);}}if (distX < SNAP_DISTANCE && distY < SNAP_DISTANCE) {activeElement.style.position = "relative";activeElement.style.left = "0px";activeElement.style.top = "0px";activeElement.style.zIndex = "auto";zone.appendChild(activeElement);snapped = true;break;}}compileWorkspace();activeElement = null;});}setupScratchWorkspace6();

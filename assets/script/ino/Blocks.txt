@@ -1,0 +1,462 @@
+// Syntax: newBlock(type, message, args, color, toolTip, hlpUrl) {}
+newBlock(
+  "definePin",
+  "Set pin %1 to %2", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "selectedPin",
+      options: [
+        ["0", "P0"],
+        ["1", "P1"],
+        ["2", "P2"],
+        ["3", "P3"],
+        ["4", "P4"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["7", "P7"],
+        ["8", "P8"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["12", "P12"],
+        ["13", "P13"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    },
+    {
+      type: "field_dropdown",
+      name: "val",
+      options: [
+        ["HIGH (1)", "S1"],
+        ["LOW (0)", "ST"]
+      ]
+    }
+  ],
+  "#0091ff",
+  "Defines a pin in HIGH or LOW (Works for all pines)",
+  ""
+);
+// Syntax: newBlock(type, message, args, color, toolTip, hlpUrl) {}
+newBlock(
+  "definePinToVar",
+  "Set pin %1 to %2", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "selectedPin",
+      options: [
+        ["3", "P3"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    },
+    {
+      type: "input_value",
+      name: "val",
+    }
+  ],
+  "#0091ff",
+  "Defines a pin to any number (Only works for PWM pines and analog pines)",
+  ""
+);
+newBlock(
+  "defineLed",
+  "Set built-in led to %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    
+    {
+      type: "field_dropdown",
+      name: "val",
+      options: [
+        ["HIGH (1)", "S1"],
+        ["LOW (0)", "ST"]
+      ]
+    }
+  ],
+  "#0091ff",
+  "Defines the built-in led to HIGH or LOW",
+  ""
+);
+newBlock(
+  "playSpkr",
+  "Play speaker on pin %1 with tone %2 for %3 sec", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "selectedPin",
+      options: [
+        ["0", "P0"],
+        ["1", "P1"],
+        ["2", "P2"],
+        ["3", "P3"],
+        ["4", "P4"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["7", "P7"],
+        ["8", "P8"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["12", "P12"],
+        ["13", "P13"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    },
+    {
+      type: "input_value",
+      name: "tone",
+    },
+    {
+      type: "input_value",
+      name: "seconds",
+    }
+  ],
+  "#0091ff",
+  "Plays a speaker.",
+  ""
+);
+newBlock(
+  "stopSpkr",
+  "Turn off speaker on pin %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "selectedPin",
+      options: [
+        ["0", "P0"],
+        ["1", "P1"],
+        ["2", "P2"],
+        ["3", "P3"],
+        ["4", "P4"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["7", "P7"],
+        ["8", "P8"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["12", "P12"],
+        ["13", "P13"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    }
+  ],
+  "#0091ff",
+  "Turns off a speaker.",
+  ""
+);
+newBlock(
+  "serialPrnt",
+  "Print to serial monitor %1 %2", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "input_value",
+      name: "textToPrint",
+    },
+    {
+      type: "field_dropdown",
+      name: "selectedPin",
+      options: [
+        ["with newline", "1"],
+        ["without newline", "0"]
+      ]
+    }
+  ],
+  "#0091ff",
+  "Prints to serial monitor a text.",
+  ""
+);
+newBlock(
+  "onStart",
+  "On start %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "input_statement",
+      name: "runcode"
+    }
+  ],
+  "#ffdd00",
+  "This event runs this code when turned on",
+  "",
+  true
+);
+newBlock(
+  "forever",
+  "Forever %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "input_statement",
+      name: "runcode"
+    }
+  ],
+  "#ffdd00",
+  "This event runs this code when turned on forever",
+  "",
+  true
+);
+newBlock(
+  "wait",
+  "Wait %1 seconds", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "input_value",
+      name: "wait"
+    }
+  ],
+  "#ffa600",
+  "This block waits the specified amount of seconds.",
+  "",
+);
+newBlock(
+  "repeat",
+  "Repeat %1 %2", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "input_value",
+      name: "wait",
+    },
+    {
+      type: "input_statement",
+      name: "runcode"
+    }
+  ],
+  "#ffa600",
+  "This block repeats this code specific times.",
+  "",
+);
+newBlock(
+  "repeatwhile",
+  "Repeat %1 %2 %3", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "wait",
+      options: [
+        ["while", "1"],
+        ["until", "2"]
+      ]
+    },
+    {
+      type: "input_value",
+      name: "condition",
+      check: "Boolean"
+    },
+    {
+      type: "input_statement",
+      name: "runcode"
+    }
+  ],
+  "#ffa600",
+  "This block repeats this code specific times when a condition is true.",
+  "",
+);
+
+// Asegúrate de que este código corra después de cargar Blockly desde cdnjs
+Blockly.common.defineBlocksWithJsonArray([
+  {
+    "type": "math_map_range",
+    "message0": "map %1 from range %2 to %3 to %4 to %5",
+    "args0": [
+      { "type": "input_value", "name": "VALUE", "check": "Number" },
+      { "type": "input_value", "name": "FROM_LOW", "check": "Number" },
+      { "type": "input_value", "name": "FROM_HIGH", "check": "Number" },
+      { "type": "input_value", "name": "TO_LOW", "check": "Number" },
+      { "type": "input_value", "name": "TO_HIGH", "check": "Number" }
+    ],
+    "output": "Number",
+    "colour": "#5ec15d",
+    "tooltip": "Maps a value from a numeric range to another one.",
+    "helpUrl": ""
+  }
+]);
+Blockly.common.defineBlocksWithJsonArray([
+  {
+    "type": "math_constrain_range",
+    "message0": "constrain %1 from range %2 to %3 to %4 to %5",
+    "args0": [
+      { "type": "input_value", "name": "VALUE", "check": "Number" },
+      { "type": "input_value", "name": "FROM_LOW", "check": "Number" },
+      { "type": "input_value", "name": "FROM_HIGH", "check": "Number" },
+      { "type": "input_value", "name": "TO_LOW", "check": "Number" },
+      { "type": "input_value", "name": "TO_HIGH", "check": "Number" }
+    ],
+    "output": "Number",
+    "colour": "#5ec15d",
+    "tooltip": "Constrains a number to be between numeric the specified limits (inclusive).",
+    "helpUrl": ""
+  }
+]);
+newBlock(
+  "readdigital",
+  "Read digital pin %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "pin",
+      options: [
+        ["0", "P0"],
+        ["1", "P1"],
+        ["2", "P2"],
+        ["3", "P3"],
+        ["4", "P4"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["7", "P7"],
+        ["8", "P8"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["12", "P12"],
+        ["13", "P13"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    }
+  ],
+  "#d000ff",
+  "This block returns 0 or 1 (HIGH or LOW) depending the value of the pin selected.",
+  "",
+  true,
+  true
+);
+newBlock(
+  "readanalog",
+  "Read analog pin %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "pin",
+      options: [
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    }
+  ],
+  "#d000ff",
+  "This block returns a value depending the value of the pin selected.",
+  "",
+  true,
+  true
+);
+newBlock(
+  "serialnum",
+  "Number of serial characters available", // Removed the extra %1 since newBlock adds it automatically
+  [],
+  "#d000ff",
+  "This block returns the number of serial characters available.",
+  "",
+  true,
+  true
+);
+newBlock(
+  "serialread",
+  "Read from serial", // Removed the extra %1 since newBlock adds it automatically
+  [],
+  "#d000ff",
+  "This block returns the serial contents.",
+  "",
+  true,
+  true
+);
+newBlock(
+  "tempread",
+  "Read temperature sensor on pin %1 in units %2", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "pin",
+      options: [
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    },
+    {
+      type: "field_dropdown",
+      name: "units",
+      options: [
+        ["°C", "c"],
+        ["°F", "f"]
+      ]
+    }
+  ],
+  "#d000ff",
+  "This block returns the output of the temperature sensor.",
+  "",
+  true,
+  true
+);
+
+newBlock(
+  "infaread",
+  "Read infared sensor on pin %1", // Removed the extra %1 since newBlock adds it automatically
+  [
+    {
+      type: "field_dropdown",
+      name: "pin",
+      options: [
+        ["0", "P0"],
+        ["1", "P1"],
+        ["2", "P2"],
+        ["3", "P3"],
+        ["4", "P4"],
+        ["5", "P5"],
+        ["6", "P6"],
+        ["7", "P7"],
+        ["8", "P8"],
+        ["9", "P9"],
+        ["10", "P10"],
+        ["11", "P11"],
+        ["12", "P12"],
+        ["13", "P13"],
+        ["A0 (14)", "P14"],
+        ["A1 (15)", "P15"],
+        ["A2 (16)", "P16"],
+        ["A3 (17)", "P17"],
+        ["A4 (18)", "P18"],
+        ["A5 (19)", "P19"],
+      ]
+    }
+  ],
+  "#d000ff",
+  "This block returns the output of the infared sensor.",
+  "",
+  true,
+  true
+);
