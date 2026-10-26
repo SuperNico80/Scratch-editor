@@ -11,3 +11,10 @@
     overflow-y: auto;
     max-height: 130px;
 }
+.res {
+    background-color:  #ffffff;
+}
+.tools {
+    margin-top: 600px;
+    width: 250px;
+}

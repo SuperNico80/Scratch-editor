@@ -6,6 +6,10 @@
     <title>Code scratch editor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/13.4.0/blockly.min.js" integrity="sha512-pZWw+3ZtKXFhD92teP6ev/VfN+oaCAl1MXF0l+PGXgltv5+XBndGJphd+fL4cqe8gzdvuNLICNdEJvKeESEAzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="../assets/style/style.css">
+    <link rel="stylesheet" href="../assets/style/toolbutton.css">
+    <script src="https://unpkg.com/blockly@13.4.0/blockly.min.js"></script>
+    <script src="https://unpkg.com/@blockly/field-colour@13.4.0/dist/index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.css" integrity="sha512-x9WwyMYBnlXMNQ6kQ/Lyzu1NqIhLQKL5Oq6xByfXuRj7s9CskyCbLv/1IjqzJmXwFXWr0ov6jBV7Qbc0hh9nHg==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         * {
             font-family: "Segoe UI";
@@ -35,13 +39,40 @@
         <h2>Generated code</h2>
         <pre class="code" id="codeOutputBox"></pre>
     </div>
+    <ul class="tools">
+        <li onclick="copyCode()">
+            <a>
+                <i class="fa-regular fa-copy fa"></i>
+                <span>Copy code</span>
+            </a>
+        </li>
+    </ul>
+    <button onclick="blocklyFullScreen()">Go fullscreen</button>
     <pre class="con">Baldi's Console Machine</pre>
     <script src="../assets/script/Console.js"></script>
+    <script src="../assets/script/script.js"></script>
     <script src="../assets/script/BlockMaker.js"></script>
     <script src="../assets/script/ino/Blocks.js"></script>
     <script src="../assets/script/ino/map.js"></script>
     <script src="../assets/script/Inject.js"></script>
     <script src="../assets/script/ino/Extensions/LiquidCrystal.js"></script>
+    <script src="../assets/script/ino/Extensions/Wire.js"></script>
+    <script src="../assets/script/ino/Extensions/LiquidCrystal_I2C.js"></script>
+    <script src="../assets/script/ino/Extensions/Servo.js"></script>
+    <script src="../assets/script/ino/Extensions/Adafruit_NeoPixel.js"></script>
+    <script src="../assets/script/ino/Extensions/DHT.js"></script>
+    <script src="../assets/script/ino/Extensions/Adafruit_Sensor.js"></script>
+    <script src="../assets/script/ino/Extensions/Adafruit_LiquidCrystal.js"></script>
+    <script src="../assets/script/ino/Extensions/HCSR04.js"></script>
+    <script src="../assets/script/ino/Extensions/SoftwareSerial.js"></script>
+    <script src="../assets/script/ino/Extensions/SSD1306.js"></script>
+    <script src="../assets/script/ino/Extensions/Adafruit_GFX.js"></script>
+    <script src="../assets/script/ino/Extensions/Define.js"></script>
+    <script src="../assets/script/ino/Extensions/var.js"></script>
+    <script src="../assets/script/ino/Extensions/func.js"></script>
+    <script src="../assets/script/ino/Extensions/Comment.js"></script>
     <script src="../assets/script/ino/codegenerator.js"></script>
+    <script src="../assets/script/Operator.js"></script>
+    <script src="../assets/script/toolbutton.js"></script>
 </body>
 </html>
