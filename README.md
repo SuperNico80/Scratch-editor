@@ -7,3 +7,5 @@ Scratch editor translates Blocks language to Arduino code. Useful for beginners.
 # Notes
 - Scratch editor uses Windows 7 build 7600 (Version 6.1)
 - You can load your previous projects (*.json, *.xml), but not Arduino projects (*.ino) 
+- If you want to use this in mobile, use *_starter.html instead
+- For computers, use the zip file or the *_starter.html file. If you're using zip file, go to <Zip file location>\assets\web\index.html
